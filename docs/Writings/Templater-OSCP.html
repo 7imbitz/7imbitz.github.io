@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-rbsA2VBKQhggwzxH7pPCaAqO46MgnOM80zW1RWuH61DGLwZJEdK2Kadq2F9CUG65" crossorigin="anonymous">
+
+    <title>7imbitz' Blog</title>
+</head>
+<body>
+    <nav class="navbar navbar-dark navbar-expand-lg bg-dark ">
+        <div class="container-fluid">
+            <div class="mx-4">
+                <a class="navbar-brand" href="/index.html">7imbitz's Blog</a>
+            </div>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+                data-bs-target="#navbarTogglerDemo02" aria-controls="navbarTogglerDemo02" aria-expanded="false"
+                aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarTogglerDemo02">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/docs/aboutMe.html">About Me</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/docs/writings.html">Writings</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">Programmings</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">OSCP Notes</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/docs/nDay.html">N-Day Analysis</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    <div class="container my-4 ">
+        <div class="row justify-content-center">
+            <h1>Obsidian Templater X OSCP</h1>
+            <img src="/images/OSCP-Templater/Header.png" alt="Diagram">
+
+            <h3>Introduction</h3>
+            <h4>OSCP</h4>
+            <p>The Offensive Security Certified Professional (OSCP) is a highly regarded certification in the field of cybersecurity. It is administered by Offensive Security and focuses on practical, hands-on skills in penetration testing and ethical hacking. The OSCP certification is designed to demonstrate the holder's ability to identify, exploit, and remediate security vulnerabilities within various systems.</p>
+
+            <h4>About the Exam</h4>
+            <ul>
+                <li>The PEN-200 course and online lab prepares you for the OSCP penetration testing certification</li>
+                <li>24-hour exam</li>
+                <li>Proctored</li>
+            </ul>
+            <p>More information about the exam can be found <a href="https://www.offsec.com/courses/pen-200/">here</a>.</p>
+
+            <h4>Obsidian</h4>
+            <p>Obsidian is a note-taking app that lets you store, link, and visualize your thoughts on your device. You can also sync, publish, and collaborate with Obsidian, and customize it with plugins and themes. I'm not trying to promote obsidian of some sort, just trying to share my methodology of using it.</p>
+            
+            <h4>About Obsidian</h4>
+            <p>Nyehh, you can find more about it <a href="https://obsidian.md/">here</a>.</p>
+            <p>Anyway I would like to share about the Obsidian's plugin named <a href="https://silentvoid13.github.io/Templater/">Templater Obsidian Plugin</a>. As stated above, the OSCP exam is a 24-hour exam (23 hour 45 minute to be precise) in which every second is important *including sleep.</p>
+            <p>With this obsidian's plugin, it can somehow structured your time management so that you can spend more time in technical things rather than reporting / documentation things.</p>
+            <p>As the methodology of the exam is always the same, the command used will also be the same but the value of IP Address will be dynamic.</p>
+            <img src="/images/OSCP-Templater/meme.jpeg" alt="meme">
+            
+            <h4>Templater Obsidian Plugin</h4>
+            <p>Firstly, we'll need to prepare the templates before the exam. You can imagine it such as a sentence "X is eating salad" where the value X are dynamic and other is static. The preparation of template means we prepare the static in the previous sentence. I will show you example of <b>my own</b> template for reference. </p>
+            <p>For the sake of cleanliness of my obsidian vault, I've already created a folder with the list of templates</p>
+            <img src="/images/OSCP-Templater/List-of-template.png" alt="list of templates">
+            <p>This is the example of content for one of my templates. Note that the templater would be such as <code><% tp.frontmatter["HOST"] %></code> where HOST is the property you will use in your notes.</p>
+            <img src="/images/OSCP-Templater/Before dynamic.png" alt="after">
+            <p>Anyway, let us first create an empty note.</p>
+            <img src="/images/OSCP-Templater/Empty-notes.png" alt="empty note">
+            <p>Next, click the cog button at bottom left of your obsidian to identify your own shortcut button for add property inside the note. In my case, it was the <code>command</code>+<code>;</code>.</p>
+            <img src="/images/OSCP-Templater/Property-button.png" alt="shortcut">
+            <p>Add your property name, according to my template before, it was <code>HOST</code> and <code>IP</code>. After that click the templater button as in the picture</p>
+            <img src="/images/OSCP-Templater/Added-property.png" alt="after">
+            <p>Now you have a list of your template, yet again for the sake of cleanliness I choose to name all of my template starting with letter T.</p>
+            <img src="/images/OSCP-Templater/Templater.png" alt="templater">
+            <p>As my property was already defined earlier, now it was reflected inside my note with the value instead. Now I can just copy paste the command from the obsidian to my box for technical things. Voila!</p>
+            <img src="/images/OSCP-Templater/Result.png" alt="result">
+
+            <h4>Last Thought</h4>
+            <p>I believe everyone have their own way of preparation and methodology. Never did I say that my ways of preparing for the OSCP was the best.</p>
+            <p><b>But</b> I do believe that this plugin can help you (if not a lot maybe a little) in your preparation for the OSCP exam.</p>
+            <p>As the exam was more on technical things i.e Active Directory, Windows and Linux Privilege Escalation. Do spend a lot of times more on it rather than writings.</p>
+            <p>In the end if you've got no findings, what are you even gonna write about?</p>
+            <img src="/images/excited.gif" alt="end">
+
+            <h4>Written After</h4>
+            <p>I'll include my own list of template in my repository <a href="https://github.com/7imbitz/OSCP-Templater">here</a>. In Syaa Allah, will surely keep it updated. My colleague once asked for it and it have been long since, wkwkwkwk. </p>
+            
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-kenU1KFdBIe4zVF0s0G1M5b4hcpxyD9F7jL+jjXkk+Q2h455rYXK/7HAuoJl+0I4" crossorigin="anonymous"></script>
+</body>
+</html>
+<!DOCTYPE html>
+<html lang="en">
+<body>
+
+    
+</body>
+</html>
