@@ -44,22 +44,28 @@
         <div class="row justify-content-center">
             <h1 class="mb-4">PwnFox</h1>
             <p class="lead text-muted">Burp Suite extension that could aid authorization issue</p>
+            <hr class="my-4">
+            <div class="row">
+                <div class="col-lg-8 mx-auto">
+                <h3>Introduction</h3>
+                <p><a href="https://portswigger.net/burp">Burp Suite</a>, is a powerful toolkit for web application security testing, enabling you to uncover vulnerabilities and strengthen your online defenses with precision and efficiency.</p>
+                <p>In order for you to use it, you need to set the burp proxy that receive incoming HTTP request from your browser with default port 127.0.0.1:8080. Hence you need to configure your current browser to those proxy in order for the request to pass through the burp.</p>
+                <p>Burp also provides a pre-configured browser chromium which eases the user that do not want to change proxy in the current browser.</p>
 
-            <h3>Introduction</h3>
-            <p><a href="https://portswigger.net/burp">Burp Suite</a>, is a powerful toolkit for web application security testing, enabling you to uncover vulnerabilities and strengthen your online defenses with precision and efficiency.</p>
-            <p>In order for you to use it, you need to set the burp proxy that receive incoming HTTP request from your browser with default port 127.0.0.1:8080. Hence you need to configure your current browser to those proxy in order for the request to pass through the burp.</p>
-            <p>Burp also provides a pre-configured browser chromium which eases the user that do not want to change proxy in the current browser.</p>
+                <h4>Issue</h4>
+                <p>Using the built-in browser by burp surely ease all the hassle of changing the proxy, but the issue comes when handling session-based or multiple role website.</p>
+                <p>One need to logout, login with another credentials/role, logout again to verify with another. Too much work!</p>
 
-            <h4>Issue</h4>
-            <p>Using the built-in browser by burp surely ease all the hassle of changing the proxy, but the issue comes when handling session-based or multiple role website.</p>
-            <p>One need to logout, login with another credentials/role, logout again to verify with another. Too much work!</p>
+                <h4>Solution</h4>
+                <div style="display: flex; justify-content: center; margin: 15px 0;">
+                <img src="/images/solutions.gif" alt="solutions"></div><p></p>
+                <p>PwnFox a burp extension can be use to solve those limitation. It linked with a firefox browser so you need to have it installed.</p>
 
-            <h4>Solution</h4>
-            <img src="/images/solutions.gif" alt="solutions">
-            <p>PwnFox a burp extension can be use to solve those limitation. It linked with a firefox browser so you need to have it installed.</p>
+                <h4>Written After</h4>
+                <p>I don't think I can write any more than this, seems like a paid review of some sort. But if you're interested, <a href="https://github.com/yeswehack/PwnFox">here</a>'s the link. </p>
+                </div>
+            </div>
 
-            <h4>Written After</h4>
-            <p>I don't think I can write any more than this, seems like a paid review of some sort. But if you're interested, <a href="https://github.com/yeswehack/PwnFox">here</a>'s the link. </p>
         </div>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-kenU1KFdBIe4zVF0s0G1M5b4hcpxyD9F7jL+jjXkk+Q2h455rYXK/7HAuoJl+0I4" crossorigin="anonymous"></script>
