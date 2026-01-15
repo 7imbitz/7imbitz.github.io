@@ -43,7 +43,7 @@
     <div class="container my-4 ">
         <div class="row justify-content-center">
             <h1 class="mb-4">Obsidian Templater X OSCP</h1>
-            <p class="lead text-muted">A repetitive methodology make easier with Obsdian Templater</p>
+            <p class="lead text-muted">A repetitive methodology make easier with Obsidian Templater</p>
 
             <hr class="my-4">
             <div class="row">
@@ -76,7 +76,11 @@
                     </div><p></p>
                     
                     <h4>Templater Obsidian Plugin</h4>
-                    <p>Firstly, we'll need to prepare the templates before the exam. You can imagine it such as a sentence "X is eating salad" where the value X are dynamic and other is static. The preparation of template means we prepare the static in the previous sentence. I will show you example of <b>my own</b> template for reference. </p>
+                    <p>Firstly, we'll need to prepare the templates before the exam. You can imagine it such as a sentence "X is eating salad" where the value X are dynamic e.g. rooney or palmer and other is constant. The preparation of template means we prepare the static in the previous sentence.</p>
+                    <p>In our case for the OSCP exam, we can give <code>nmap</code> command for example. The same command was used during initial assessment, where we try to find open port/service that we could interact with</p>
+                    <p><code>nmap -p- -vvv --min-rate 10000 10.10.11.80</code></p>
+                    <p>The <b>X</b> or dynamic value in this case is the IP Address which is 10.10.11.80; While the command <code>nmap -p- -vvv --min-rate 10000</code> is static and being used every time.</p>
+                    <p>Moving on, I will show you example of <b>my own</b> template for reference. </p>
                     <p>For the sake of cleanliness of my obsidian vault, I've already created a folder with the list of templates</p>
                     <div style="display: flex; justify-content: center; margin: 15px 0; max-width: 700px; margin-left: auto; margin-right: auto;">
                     <img src="/images/OSCP-Templater/List-of-template.png" alt="list of templates" style=" max-width: 100%; height: auto; display: block; border-radius: 8px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);"></div><p></p>
@@ -89,7 +93,7 @@
                     <p>Next, click the cog button at bottom left of your obsidian to identify your own shortcut button for add property inside the note. In my case, it was the <code>command</code>+<code>;</code>.</p>
                     <div style="display: flex; justify-content: center; margin: 15px 0; max-width: 700px; margin-left: auto; margin-right: auto;">
                     <img src="/images/OSCP-Templater/Property-button.png" alt="shortcut" style=" max-width: 100%; height: auto; display: block; border-radius: 8px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);"></div><p></p>
-                    <p>Add your property name, according to my template before, it was <code>HOST</code> and <code>IP</code>. After that click the templater button as in the picture</p>
+                    <p>Add your property name; According to my template before, it was <code>HOST</code> and <code>IP</code>. After that click the templater button as in the picture</p>
                     <div style="display: flex; justify-content: center; margin: 15px 0; max-width: 700px; margin-left: auto; margin-right: auto;">
                     <img src="/images/OSCP-Templater/Added-property.png" alt="after" style=" max-width: 100%; height: auto; display: block; border-radius: 8px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);"></div><p></p>
                     <p>Now you have a list of your template, yet again for the sake of cleanliness I choose to name all of my template starting with letter T.</p>
@@ -106,7 +110,8 @@
                     <p>In the end if you've got no findings, what are you even gonna write about?</p>
                     <div style="display: flex; justify-content: center; margin: 15px 0;">
                     <img src="/images/excited.gif" alt="end" style=" max-width: 50%; height: auto; display: block; border-radius: 8px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
-                    </div>><p></p>
+                    </div>
+                    <p></p>
 
                     <h4>Written After</h4>
                     <p>I'll include my own list of template in my repository <a href="https://github.com/7imbitz/OSCP-Templater">here</a>. In Syaa Allah, will surely keep it updated. My colleague once asked for it and it have been long since, wkwkwkwk. </p>
