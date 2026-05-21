@@ -1,0 +1,201 @@
+.cvssjs {
+    text-align: center;
+}
+
+.cvssjs .lv {
+    display: inline-block;
+    width: 0.5em;
+    height: 1em;
+    vertical-align: middle;
+    margin-right: 4px;
+}
+
+.cvssjs a {
+    color: #489;
+    text-decoration: none;
+}
+
+.cvssjs dl {
+    display: inline-block;
+    vertical-align: top;
+    background-color: #424a40;
+    margin: 2px;
+    border-radius: 4px;
+    box-shadow: 0px 0px 5px #bbb;
+    transition: background-color 0.3s ease-in-out;
+    min-width: 140px;
+}
+
+.cvssjs dt {
+    color: #EEEEEE;
+    padding: 5px;
+    font-size: 60%;
+    overflow-x: hidden;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+}
+
+.cvssjs dl:hover, .cvssjs dl:focus {
+    background-color: #676a60;
+    box-shadow: 0px 0px 5px #aaa;
+}
+.cvssjs dl:hover dt, .cvssjs dl:focus dt {
+    color: #ffffff;
+}
+
+.cvssjs dd {
+    margin: 0px;
+    padding: 0px;
+    text-align: left;
+}
+
+.cvssjs dd label,
+#predef span {
+    min-width: 7.5em;
+    padding: 0px 2px 0px 2px;
+    display: block;
+    margin: 1px;
+    margin-top: 0px;
+    background-color: #f7f7f4;
+    vertical-align: middle;
+    transition: background-color 0.3s ease-in-out;
+}
+
+.cvssjs dd:last-child label,
+#predef span:last-child {
+    border-bottom-left-radius: 3px;
+    border-bottom-right-radius: 3px;
+}
+
+.cvssjs dd small {
+    display: none;
+}
+
+.cvssjs dd:hover small {
+    position: absolute;
+    max-width: 240px;
+    border: solid 1px #333;
+    display: block;
+    color: black;
+    background-color: #FFFFC1;
+    border-radius: 5px;
+    padding: 5px;
+    margin-top: .7em;
+    margin-left: 5em;
+    box-shadow: 2px 2px 5px #333;
+    z-index: 1;
+}
+
+#predef span:hover:before {
+    content: "<";
+    display: block;
+    position: absolute;
+    margin-top: 0px;
+    margin-left: -2px;
+    color: #424a40;
+}
+
+.cvssjs dd > input {
+    border: 0;
+    clip: rect(0 0 0 0);
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    padding: 0;
+    position: absolute;
+    width: 1px;
+}
+
+/* Severity colors - worst to best */
+/* Row 1 (worst) */
+.cvssjs dd:nth-child(2) input:checked + label,
+.cvssjs .Critical {
+    background-color: rgb(240, 130, 120);
+}
+
+/* Row 2 */
+.cvssjs dd:nth-child(3) input:checked + label,
+.cvssjs .High {
+    background-color: rgb(240, 170, 83);
+    transition: background-color 0.1s ease-in-out;
+}
+
+/* Row 3 */
+.cvssjs dd:nth-child(4) input:checked + label,
+.cvssjs .Medium {
+    background-color: rgb(250, 230, 120);
+}
+
+/* Row 4 (best) */
+.cvssjs dd:last-child input:checked + label,
+.cvssjs .Low {
+    background-color: rgb(208, 212, 134);
+}
+
+/* CIA None = green */
+.cvssjs dl.VC dd:last-child input:checked + label,
+.cvssjs dl.VI dd:last-child input:checked + label,
+.cvssjs dl.VA dd:last-child input:checked + label,
+.cvssjs dl.SC dd:last-child input:checked + label,
+.cvssjs dl.SI dd:last-child input:checked + label,
+.cvssjs dl.SA dd:last-child input:checked + label,
+.cvssjs .None {
+    background-color: rgb(162, 213, 114);
+}
+
+/* AV Physical as best */
+.cvssjs dl.AV dd:last-child input:checked + label {
+    background-color: rgb(162, 213, 114);
+}
+
+/* Hover colors */
+.cvssjs dd:nth-child(2) label:hover {
+    background-color: rgb(250, 140, 130);
+}
+.cvssjs dd:nth-child(3) label:hover {
+    background-color: rgb(250, 180, 93);
+    transition: background-color 0.1s ease-in-out;
+}
+.cvssjs dd:nth-child(4) label:hover {
+    background-color: rgb(255, 240, 130);
+}
+.cvssjs dd:last-child label:hover {
+    background-color: rgb(172, 223, 124);
+}
+
+.cvssjs hr {
+    border-style: dashed;
+    color: #949ca0;
+}
+
+.cvssjs .score,
+.cvssjs .vector,
+.cvssjs .severity {
+    margin: 2px;
+    display: inline-block;
+}
+
+.cvssjs .score {
+    width: 1.5em;
+}
+
+.cvssjs .severity {
+    width: 5em;
+    border-radius: 4px;
+    padding: 5px;
+    text-align: center;
+    transition: background-color 0.1s ease-out;
+}
+
+.cvssjs .results {
+    padding: 7px;
+}
+
+.cvssjs dl.result dd label.results:hover {
+    background-color: white;
+}
+
+.cvssjs .results sub {
+    display: none;
+    font-size: x-small;
+}
