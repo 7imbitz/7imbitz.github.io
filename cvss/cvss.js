@@ -178,8 +178,8 @@ var CVSS = function(id, opts) {
     this.labels = {
         AV:'Attack Vector (AV)',AC:'Attack Complexity (AC)',AT:'Attack Requirements (AT)',
         PR:'Privileges Required (PR)',UI:'User Interaction (UI)',
-        VC:'Confidentiality - Vuln (VC)',VI:'Integrity - Vuln (VI)',VA:'Availability - Vuln (VA)',
-        SC:'Confidentiality - Subseq (SC)',SI:'Integrity - Subseq (SI)',SA:'Availability - Subseq (SA)'
+        VC:'Conf. (VC)',VI:'Integ. (VI)',VA:'Avail. (VA)',
+        SC:'Conf. (SC)',SI:'Integ. (SI)',SA:'Avail. (SA)'
     };
     this.metrics = {
         AV:{N:'Network',A:'Adjacent',L:'Local',P:'Physical'},
@@ -188,7 +188,7 @@ var CVSS = function(id, opts) {
         VC:{H:'High',L:'Low',N:'None'},VI:{H:'High',L:'Low',N:'None'},VA:{H:'High',L:'Low',N:'None'},
         SC:{H:'High',L:'Low',N:'None'},SI:{H:'High',L:'Low',N:'None'},SA:{H:'High',L:'Low',N:'None'}
     };
-    this.defaults = {AV:'N',AC:'L',AT:'N',PR:'N',UI:'N',VC:'H',VI:'H',VA:'H',SC:'N',SI:'N',SA:'N'};
+    this.defaults = {AV:'N',AC:'L',AT:'N',PR:'N',UI:'N',SC:'N',SI:'N',SA:'N'};
     this.descs = {
         AV:{N:'The vulnerable component is bound to the network stack.',A:'Limited to logically adjacent topology.',L:'Not bound to network stack; local access required.',P:'Requires physical touch or manipulation.'},
         AC:{L:'Specialized conditions do not exist; repeatable success.',H:'Depends on conditions beyond attacker\'s control.'},
@@ -310,11 +310,13 @@ CVSS.prototype._update = function() {
     this.severity.innerHTML = r.name + '<sub>' + r.bottom + ' - ' + r.top + '</sub>';
     this.severity.title = r.bottom + ' - ' + r.top;
 
-    var borderColors = {
+    var bgColors = {
         'Critical': '#8B0000', 'High': '#CC0000',
-        'Medium': '#CC9900', 'Low': '#7799CC', 'None': '#4a7a4a'
+        'Medium': '#CC9900', 'Low': '#7799CC', 'None': '#424a40', '?': '#424a40'
     };
-    this.resultDl.style.borderColor = borderColors[r.name] || '#424a40';
+    var color = bgColors[r.name] || '#424a40';
+    this.resultDl.style.backgroundColor = color;
+    this.resultDl.style.borderColor = color;
 
     if (this.opts && this.opts.onchange) this.opts.onchange();
 };

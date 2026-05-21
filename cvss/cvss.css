@@ -12,23 +12,23 @@
 
 .cvssjs dl {
     display: inline-block; vertical-align: top;
-    background-color: #424a40; margin: 2px;
-    border-radius: 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    background-color: #424a40; margin: 0; padding: 0;
+    border: none; border-radius: 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.15);
     overflow: hidden; transition: background-color 0.3s;
 }
 .cvssjs dt {
     color: #ddd; padding: 6px 8px; font-size: 65%;
     text-transform: uppercase; letter-spacing: .5px;
-    background: #3a4238; text-align: center;
+    background: #3a4238; text-align: center; border: none;
 }
 .cvssjs dl:hover { background-color: #676a60; }
 .cvssjs dl:hover dt { color: #fff; }
-.cvssjs dd { margin: 0; padding: 0; text-align: left; }
+.cvssjs dd { margin: 0; padding: 0; text-align: left; border: none; }
 
 .cvssjs dd label {
     min-width: 7.5em; padding: 4px 6px; display: flex; align-items: center;
-    margin: 1px; background-color: #f7f7f4; cursor: pointer;
-    transition: background-color 0.15s; font-size: 14px;
+    background-color: #f7f7f4; cursor: pointer;
+    transition: background-color 0.15s; font-size: 14px; border: none;
 }
 .cvssjs dd label:hover { background-color: #e8e8e0; }
 .cvssjs dd:last-child label { border-radius: 0 0 4px 4px; }
@@ -63,10 +63,12 @@
 .cvssjs dd:nth-child(4) label:hover { background-color: rgb(255,240,130); }
 .cvssjs dd:last-child label:hover { background-color: rgb(172,223,124); }
 
-.result-layer { margin-top: 10px; }
+.result-layer { margin-top: 10px; display: flex; justify-content: center; }
 .cvssjs dl.result {
-    display: block; min-width: 100%; background-color: #424a40;
+    display: block; width: 100%; max-width: 960px;
+    background-color: #424a40; border: none;
     border-radius: 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    transition: background-color 0.3s;
 }
 .cvssjs dl.result dt {
     color: #ddd; padding: 6px; font-size: 65%;
@@ -75,12 +77,12 @@
 }
 .cvssjs dl.result dd { padding: 8px; text-align: center; }
 .cvssjs .results { display: flex; align-items: center; justify-content: center; gap: 8px; }
-.cvssjs .score { font-size: 1.4em; font-weight: bold; width: 2em; text-align: center; }
+.cvssjs .score { font-size: 1.4em; font-weight: bold; width: 2em; text-align: center; color: #fff; }
 .cvssjs .severity {
     width: auto; border-radius: 4px; padding: 4px 10px;
-    text-align: center; font-weight: bold; font-size: 14px;
+    text-align: center; font-weight: bold; font-size: 14px; color: #fff;
 }
-.cvssjs .vector { font-size: 13px; word-break: break-all; }
+.cvssjs .vector { font-size: 13px; word-break: break-all; color: #ddd; }
 .cvssjs .results sub { display: none; font-size: x-small; }
 
 @media (max-width: 700px) {
