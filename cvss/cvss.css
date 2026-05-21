@@ -3,32 +3,56 @@
 .cvssjs .icon svg, .cvssjs .icon img { vertical-align: middle; width: 20px; height: 20px; }
 .cvssjs a { color: #489; text-decoration: none; }
 
-#cvssboard { max-width: 960px; margin: 0 auto; }
+#cvssboard {
+    max-width: 960px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: repeat(5, minmax(150px, 1fr));
+    gap: 6px;
+}
 
-.layer { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin-bottom: 8px; }
-.layer1 dl { min-width: 150px; }
-.layer2 dl { min-width: 165px; }
-.layer3 dl { min-width: 170px; }
+.layer { display: contents; }
 
 .cvssjs dl {
-    display: inline-block; vertical-align: top;
-    background-color: #424a40; margin: 0; padding: 0;
-    border: none; border-radius: 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.15);
-    overflow: hidden; transition: background-color 0.3s;
+    display: block;
+    background-color: transparent;
+    margin: 0; padding: 0;
+    border: none;
+    border-radius: 6px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    overflow: hidden;
+    transition: background-color 0.3s;
 }
+
+/* Row 1: all 5 columns */
+.layer1 dl { grid-column: auto; }
+
+/* Row 2: columns 2-4 (under AC, AT, PR) */
+.layer2 dl:nth-child(1) { grid-column: 2; }
+.layer2 dl:nth-child(2) { grid-column: 3; }
+.layer2 dl:nth-child(3) { grid-column: 4; }
+
+/* Row 3: columns 2-4 (under AC, AT, PR) */
+.layer3 dl:nth-child(1) { grid-column: 2; }
+.layer3 dl:nth-child(2) { grid-column: 3; }
+.layer3 dl:nth-child(3) { grid-column: 4; }
+
+/* Result: all 5 columns */
+.result-layer { grid-column: 1 / 6; }
+
 .cvssjs dt {
     color: #ddd; padding: 6px 8px; font-size: 65%;
     text-transform: uppercase; letter-spacing: .5px;
-    background: #3a4238; text-align: center; border: none;
+    background: #3a4238; text-align: center;
 }
 .cvssjs dl:hover { background-color: #676a60; }
 .cvssjs dl:hover dt { color: #fff; }
-.cvssjs dd { margin: 0; padding: 0; text-align: left; border: none; }
+.cvssjs dd { margin: 0; padding: 0; text-align: left; }
 
 .cvssjs dd label {
     min-width: 7.5em; padding: 4px 6px; display: flex; align-items: center;
     background-color: #f7f7f4; cursor: pointer;
-    transition: background-color 0.15s; font-size: 14px; border: none;
+    transition: background-color 0.15s; font-size: 14px;
 }
 .cvssjs dd label:hover { background-color: #e8e8e0; }
 .cvssjs dd:last-child label { border-radius: 0 0 4px 4px; }
@@ -63,11 +87,12 @@
 .cvssjs dd:nth-child(4) label:hover { background-color: rgb(255,240,130); }
 .cvssjs dd:last-child label:hover { background-color: rgb(172,223,124); }
 
-.result-layer { margin-top: 10px; display: flex; justify-content: center; }
 .cvssjs dl.result {
-    display: block; width: 100%; max-width: 960px;
-    background-color: #424a40; border: none;
-    border-radius: 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    display: block;
+    background-color: #424a40;
+    border: none;
+    border-radius: 6px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
     transition: background-color 0.3s;
 }
 .cvssjs dl.result dt {
@@ -75,17 +100,36 @@
     text-transform: uppercase; letter-spacing: .5px;
     background: #3a4238; text-align: center;
 }
-.cvssjs dl.result dd { padding: 8px; text-align: center; }
+.cvssjs dl.result dd {
+    padding: 8px; text-align: center;
+    background-color: transparent;
+}
 .cvssjs .results { display: flex; align-items: center; justify-content: center; gap: 8px; }
-.cvssjs .score { font-size: 1.4em; font-weight: bold; width: 2em; text-align: center; color: #fff; }
+.cvssjs .score { font-size: 1.4em; font-weight: bold; width: 2em; text-align: center; }
 .cvssjs .severity {
     width: auto; border-radius: 4px; padding: 4px 10px;
-    text-align: center; font-weight: bold; font-size: 14px; color: #fff;
+    text-align: center; font-weight: bold; font-size: 14px;
 }
-.cvssjs .vector { font-size: 13px; word-break: break-all; color: #ddd; }
+.cvssjs .vector { font-size: 13px; word-break: break-all; }
 .cvssjs .results sub { display: none; font-size: x-small; }
 
 @media (max-width: 700px) {
-    .layer { flex-direction: column; align-items: center; }
+    #cvssboard {
+        display: block;
+    }
+    .layer {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 6px;
+        margin-bottom: 8px;
+    }
+    .layer2::before, .layer3::before {
+        content: '';
+        min-width: 156px;
+        margin-right: 6px;
+    }
+    .layer2, .layer3 { justify-content: flex-start; }
     .cvssjs dl { min-width: 280px !important; }
+    .result-layer { margin-top: 10px; }
 }
