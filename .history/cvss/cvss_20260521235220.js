@@ -176,10 +176,10 @@ var CVSS = function(id, opts) {
 
     this.groups = ['AV','AC','AT','PR','UI','VC','VI','VA','SC','SI','SA'];
     this.labels = {
-        AV:'Attack Vector (AV)',AC:'Attack Complexity (AC)',AT:'Attack Requirements (AT)',
-        PR:'Privileges Required (PR)',UI:'User Interaction (UI)',
-        VC:'Conf. (VC)',VI:'Integ. (VI)',VA:'Avail. (VA)',
-        SC:'Conf. (SC)',SI:'Integ. (SI)',SA:'Avail. (SA)'
+        AV:'Attack Vector',AC:'Attack Complexity',AT:'Attack Requirements',
+        PR:'Privileges Required',UI:'User Interaction',
+        VC:'Conf. (Vuln. Sys.)',VI:'Integ. (Vuln. Sys.)',VA:'Avail. (Vuln. Sys.)',
+        SC:'Conf. (Sub. Sys.)',SI:'Integ. (Sub. Sys.)',SA:'Avail. (Sub. Sys.)'
     };
     this.metrics = {
         AV:{N:'Network',A:'Adjacent',L:'Local',P:'Physical'},
