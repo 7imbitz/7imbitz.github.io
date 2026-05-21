@@ -178,8 +178,8 @@ var CVSS = function(id, opts) {
     this.labels = {
         AV:'Attack Vector (AV)',AC:'Attack Complexity (AC)',AT:'Attack Requirements (AT)',
         PR:'Privileges Required (PR)',UI:'User Interaction (UI)',
-        VC:'Conf. (VC)',VI:'Integ. (VI)',VA:'Avail. (VA)',
-        SC:'Conf. (SC)',SI:'Integ. (SI)',SA:'Avail. (SA)'
+        VC:'Confidentiality - Vuln (VC)',VI:'Integrity - Vuln (VI)',VA:'Availability - Vuln (VA)',
+        SC:'Confidentiality - Subseq (SC)',SI:'Integrity - Subseq (SI)',SA:'Availability - Subseq (SA)'
     };
     this.metrics = {
         AV:{N:'Network',A:'Adjacent',L:'Local',P:'Physical'},
@@ -204,28 +204,29 @@ var CVSS = function(id, opts) {
     };
     this.reg = {AV:'NALP',AC:'LH',AT:'NP',PR:'NLH',UI:'NPA',VC:'HLN',VI:'HLN',VA:'HLN',SC:'HLN',SI:'HLN',SA:'HLN'};
     this.bme = {};
+    this.pngMap = {
+        AV: {N:'AV1.png', A:'AV2.png', P:'AV3.png', L:'AV4.png'},
+        PR: {N:'PR1.png', L:'PR2.png', H:'PR3.png'}
+    };
     var me = this;
 
     var board = $('div'); board.id = 'cvssboard'; el.appendChild(board);
 
-    // Layer 1: Exploitability
     var l1 = $('div'); l1.className = 'layer layer1';
     ['AV','AC','AT','PR','UI'].forEach(function(g){l1.appendChild(me._buildGroup(g,$));});
     board.appendChild(l1);
 
-    // Layer 2: Vulnerable System Impact
     var l2 = $('div'); l2.className = 'layer layer2';
     ['VC','VI','VA'].forEach(function(g){l2.appendChild(me._buildGroup(g,$));});
     board.appendChild(l2);
 
-    // Layer 3: Subsequent System Impact
     var l3 = $('div'); l3.className = 'layer layer3';
     ['SC','SI','SA'].forEach(function(g){l3.appendChild(me._buildGroup(g,$));});
     board.appendChild(l3);
 
-    // Result bar
     var rl = $('div'); rl.className = 'layer result-layer';
     var rdl = $('dl'); rdl.className = 'result';
+    this.resultDl = rdl;
     rdl.innerHTML = '<dt>SEVERITY · SCORE · VECTOR</dt>';
     var rdd = $('dd');
     var lbl = $('label'); lbl.className = 'results';
@@ -254,7 +255,15 @@ CVSS.prototype._buildGroup = function(g, $) {
         dd.appendChild(inp);
         var lbl = $('label'); lbl.setAttribute('for',inp.id);
         var icon = $('span'); icon.className = 'icon';
-        icon.innerHTML = cvssIcons[g][v];
+        if (this.pngMap[g] && this.pngMap[g][v]) {
+            var img = $('img');
+            img.src = this.pngMap[g][v];
+            img.width = 20; img.height = 20;
+            img.alt = vals[v];
+            icon.appendChild(img);
+        } else {
+            icon.innerHTML = cvssIcons[g][v];
+        }
         lbl.appendChild(icon);
         var txt = $('span'); txt.className = 'val'; txt.textContent = vals[v];
         lbl.appendChild(txt);
@@ -274,26 +283,24 @@ CVSS.prototype._setDefault = function() {
     this._update();
 };
 
-CVSS.prototype._onMetric = function(a) {
-    var vec = this.vector.textContent;
-    var re = /AV:.\/AC:.\/AT:.\/PR:.\/UI:.\/VC:.\/VI:.\/VA:.\/SC:.\/SI:.\/SA:./;
-    if (!re.test(vec)) vec = 'AV:_/AC:_/AT:_/PR:_/UI:_/VC:_/VI:_/VA:_/SC:_/SI:_/SA:_';
-    var nv = vec.replace(new RegExp('\\b'+a.name+':.'), a.name+':'+a.value);
-    this.set(nv);
+CVSS.prototype._onMetric = function() {
+    this._update();
 };
 
 CVSS.prototype._update = function() {
-    var vec = 'CVSS:4.0/'; var sep = '';
+    var vec = 'CVSS:4.0';
+    var sep = '/';
     for (var m in this.metrics) {
-        var match = (new RegExp('\\b('+m+':['+this.reg[m]+'])')).exec(this.vector.textContent);
-        if (match) {
-            this.bme[match[0].replace(':','')].checked = true;
-            vec += sep + match[0];
+        var checked = null;
+        var els = this.el.querySelectorAll('input[name="'+m+'"]');
+        for (var i = 0; i < els.length; i++) {
+            if (els[i].checked) { checked = els[i].value; break; }
+        }
+        if (checked) {
+            vec += sep + m + ':' + checked;
         } else {
             vec += sep + m + ':_';
-            for (var j in this.metrics[m]) this.bme[m+j].checked = false;
         }
-        sep = '/';
     }
     this.vector.textContent = vec;
     var s = this._calc();
@@ -302,6 +309,13 @@ CVSS.prototype._update = function() {
     this.severity.className = r.name + ' severity';
     this.severity.innerHTML = r.name + '<sub>' + r.bottom + ' - ' + r.top + '</sub>';
     this.severity.title = r.bottom + ' - ' + r.top;
+
+    var borderColors = {
+        'Critical': '#8B0000', 'High': '#CC0000',
+        'Medium': '#CC9900', 'Low': '#7799CC', 'None': '#4a7a4a'
+    };
+    this.resultDl.style.borderColor = borderColors[r.name] || '#424a40';
+
     if (this.opts && this.opts.onchange) this.opts.onchange();
 };
 
@@ -327,4 +341,14 @@ CVSS.prototype._rating = function(s) {
 };
 
 CVSS.prototype.get = function() { return {score:this.score.textContent, vector:this.vector.textContent}; };
-CVSS.prototype.set = function(vec) { this._update(); };
+
+CVSS.prototype.set = function(vec) {
+    var parts = vec.split('/');
+    for (var i = 0; i < parts.length; i++) {
+        var kv = parts[i].split(':');
+        if (kv.length === 2 && this.metrics[kv[0]] && this.bme[kv[0]+kv[1]]) {
+            this.bme[kv[0]+kv[1]].checked = true;
+        }
+    }
+    this._update();
+};
