@@ -2,67 +2,28 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CVSS Calculator v4.0 - Base Score</title>
     <link rel="icon" type="image/png" href="favicon.png">
-    <link rel="shortcut icon" type="image/png" href="favicon.png">
-    <meta name="description" content="Common Vulnerability Scoring System (CVSS) Version 4.0 Base Score Calculator with hints"/>
-    <meta name="keywords" content="CVSS v4.0 Base Score Calculator, ATTACK VECTOR, ATTACK COMPLEXITY, ATTACK REQUIREMENTS, PRIVILEGES REQUIRED, USER INTERACTION, CONFIDENTIALITY, INTEGRITY, AVAILABILITY, VULNERABLE SYSTEM, SUBSEQUENT SYSTEM, SEVERITY, SCORE, VECTOR"/>
-    <meta property="og:type" content="website"/>
-    <meta property="og:title" content="CVSS v4.0 Base Score Calculator"/>
-    <meta name="twitter:title" content="CVSS v4.0 Base Score Calculator"/>
-    <meta property="og:description" content="Common Vulnerability Scoring System (CVSS) Version 4.0 Base Score Calculator"/>
-    <link rel="stylesheet" type="text/css" media="all" href="cvss.css">
+    <meta name="description" content="CVSS Version 4.0 Base Score Calculator with visual icons"/>
+    <link rel="stylesheet" href="cvss.css">
+    <script src="icons.js"></script>
     <script src="cvss.js"></script>
     <style>
-        body {
-            background-color: #e0e4e4;
-            font-family: arial, sans-serif;
-            padding: 1em;
-            text-align: center;
-            align-content: center;
-        }
-        #footer {
-            font-size: x-small;
-        }
-        #cvssboard {
-            text-align: center;
-            align-content: center;
-        }
-        #footer, h3 {
-            color: gray;
-        }
-        @media screen and (min-width: 1100px) {
-            #cvssboard {
-                width: 900px;
-                align-content: center;
-                display: inline-block;
-            }
-        }
-        .back-link {
-            position: absolute;
-            top: 1em;
-            left: 1.5em;
-            font-size: small;
-            color: #489;
-            text-decoration: none;
-        }
-        .back-link:hover {
-            text-decoration: underline;
-        }
+        body { background: #e0e4e4; font-family: arial, sans-serif; padding: 1em; text-align: center; }
+        h3 { color: #555; margin: 0 0 10px; font-size: 18px; }
+        #footer { font-size: x-small; color: gray; margin-top: 12px; }
+        .back-link { position: absolute; top: 1em; left: 1.5em; font-size: small; color: #489; text-decoration: none; }
+        .back-link:hover { text-decoration: underline; }
     </style>
 </head>
 <body>
     <a href="/" class="back-link">&larr; 7imbitz's Blog</a>
-    <hgroup>
-        <h3>CVSS v4.0 Base Score Calculator</h3>
-    </hgroup>
-    <div id="cvssboard"></div>
-    <br>
+    <h3>CVSS v4.0 Base Score Calculator</h3>
+    <div class="cvssjs" id="cvssboard"></div>
     <footer id="footer">
-        CVSS v4.0 Calculator &mdash; adapted from <a href="https://github.com/cvssjs">CVSSjs</a> by Chandan B.N.
-        <br>Common Vulnerability Scoring System (CVSS) is a free and open standard owned and managed by <a href="https://www.first.org/cvss">FIRST.Org</a>.
+        Adapted from <a href="https://github.com/cvssjs">CVSSjs</a> by Chandan B.N. &middot;
+        CVSS is owned by <a href="https://www.first.org/cvss">FIRST.Org</a>.
     </footer>
     <script>
         var c = new CVSS("cvssboard", {
