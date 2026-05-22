@@ -310,20 +310,6 @@ CVSS.prototype._update = function() {
     this.severity.innerHTML = r.name + '<sub>' + r.bottom + ' - ' + r.top + '</sub>';
     this.severity.title = r.bottom + ' - ' + r.top;
 
-    var colors = {
-        'Critical': { bg: '#8B0000', text: '#fff' },
-        'High':     { bg: '#CC0000', text: '#fff' },
-        'Medium':   { bg: '#CC9900', text: '#fff' },
-        'Low':      { bg: '#7799CC', text: '#fff' },
-        'None':     { bg: '#424a40', text: '#ddd' },
-        '?':        { bg: '#424a40', text: '#ddd' }
-    };
-    var c = colors[r.name] || colors['?'];
-    this.resultDl.style.backgroundColor = c.bg;
-    this.resultDl.style.color = c.text;
-    this.vector.style.color = c.text;
-    this.score.style.color = c.text;
-
     if (this.opts && this.opts.onchange) this.opts.onchange();
 };
 

@@ -4,36 +4,25 @@
 .cvssjs a { color: #489; text-decoration: none; }
 
 #cvssboard {
-    display: grid;
-    grid-template-columns: repeat(5, minmax(150px, 1fr));
-    gap: 6px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
     max-width: 960px;
     margin: 0 auto;
 }
-.layer { display: contents; }
 
-/* Row 1: 5 cards */
-.layer1 dl:nth-of-type(1) { grid-column: 1; }
-.layer1 dl:nth-of-type(2) { grid-column: 2; }
-.layer1 dl:nth-of-type(3) { grid-column: 3; }
-.layer1 dl:nth-of-type(4) { grid-column: 4; }
-.layer1 dl:nth-of-type(5) { grid-column: 5; }
-
-/* Row 2: 3 cards under cols 2-4 */
-.layer2 dl:nth-of-type(1) { grid-column: 2; }
-.layer2 dl:nth-of-type(2) { grid-column: 3; }
-.layer2 dl:nth-of-type(3) { grid-column: 4; }
-
-/* Row 3: 3 cards under cols 2-4 */
-.layer3 dl:nth-of-type(1) { grid-column: 2; }
-.layer3 dl:nth-of-type(2) { grid-column: 3; }
-.layer3 dl:nth-of-type(3) { grid-column: 4; }
-
-/* Result: full width */
-dl.result { grid-column: 1 / 6; }
+.layer {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px;
+    margin-bottom: 8px;
+    width: 100%;
+}
 
 .cvssjs dl {
     display: block;
+    vertical-align: top;
     background-color: transparent;
     margin: 0; padding: 0;
     border: none;
@@ -41,6 +30,7 @@ dl.result { grid-column: 1 / 6; }
     box-shadow: 0 2px 6px rgba(0,0,0,0.15);
     overflow: hidden;
     transition: background-color 0.3s;
+    min-width: 150px;
 }
 .cvssjs dt {
     color: #ddd; padding: 6px 8px; font-size: 65%;
@@ -87,13 +77,19 @@ dl.result { grid-column: 1 / 6; }
 .cvssjs dd:nth-child(4) label:hover { background-color: rgb(255,240,130); }
 .cvssjs dd:last-child label:hover { background-color: rgb(172,223,124); }
 
+.result-layer {
+    margin-top: 10px;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+}
 .cvssjs dl.result {
     display: block;
+    width: 100%;
     background-color: #424a40;
     border: none;
     border-radius: 6px;
     box-shadow: 0 2px 6px rgba(0,0,0,0.15);
-    transition: background-color 0.3s;
 }
 .cvssjs dl.result dt {
     color: #ddd; padding: 6px; font-size: 65%;
@@ -102,26 +98,20 @@ dl.result { grid-column: 1 / 6; }
 }
 .cvssjs dl.result dd {
     padding: 8px; text-align: center;
-    background-color: transparent;
+    background-color: #f7f7f4;
+    color: #222;
 }
 .cvssjs .results { display: flex; align-items: center; justify-content: center; gap: 8px; }
-.cvssjs .score { font-size: 1.4em; font-weight: bold; width: 2em; text-align: center; }
+.cvssjs .score { font-size: 1.4em; font-weight: bold; width: 2em; text-align: center; color: #222; }
 .cvssjs .severity {
     width: auto; border-radius: 4px; padding: 4px 10px;
     text-align: center; font-weight: bold; font-size: 14px;
+    color: #222;
 }
-.cvssjs .vector { font-size: 13px; word-break: break-all; }
+.cvssjs .vector { font-size: 13px; word-break: break-all; color: #222; }
 .cvssjs .results sub { display: none; font-size: x-small; }
 
 @media (max-width: 700px) {
-    #cvssboard { display: block; }
-    .layer {
-        display: flex; flex-wrap: wrap; justify-content: center;
-        gap: 6px; margin-bottom: 8px;
-    }
-    .layer2, .layer3 { justify-content: flex-start; }
-    .layer2::before, .layer3::before {
-        content: ''; min-width: 156px; margin-right: 6px;
-    }
+    .layer { flex-direction: column; align-items: center; }
     .cvssjs dl { min-width: 280px !important; }
 }
