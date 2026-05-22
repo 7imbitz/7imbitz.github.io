@@ -109,6 +109,19 @@
     color: #222;
 }
 .cvssjs .vector { font-size: 13px; word-break: break-all; color: #222; }
+.cvssjs .copy-btn {
+    background: #e8e8e0; border: 1px solid #ccc; border-radius: 4px;
+    padding: 2px 6px; margin-left: 6px; cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center;
+    transition: background-color 0.15s, border-color 0.15s;
+    vertical-align: middle;
+}
+.cvssjs .copy-btn:hover {
+    background: #ddd; border-color: #999;
+}
+.cvssjs .copy-btn.copied {
+    background: #d4edda; border-color: #28a745;
+}
 .cvssjs .results sub { display: none; font-size: x-small; }
 
 @media (max-width: 700px) {

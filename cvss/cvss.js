@@ -233,8 +233,27 @@ var CVSS = function(id, opts) {
     this.severity = $('span'); this.severity.className = 'severity';
     this.score = $('span'); this.score.className = 'score';
     this.vector = $('a'); this.vector.className = 'vector';
+    var copyBtn = $('button');
+    copyBtn.className = 'copy-btn';
+    copyBtn.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14"><rect x="3" y="3" width="13" height="13" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 8h13v13a2 2 0 0 1-2 2H8V8z" fill="none" stroke="currentColor" stroke-width="2"/></svg>';
+    copyBtn.title = 'Copy CVSS vector to clipboard';
+    var me = this;
+    copyBtn.onclick = function() {
+        var vec = me.vector.textContent;
+        if (vec && vec !== '?') {
+            navigator.clipboard.writeText(vec).then(function() {
+                copyBtn.classList.add('copied');
+                copyBtn.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14"><path d="M4 12l5 5L20 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+                setTimeout(function() {
+                    copyBtn.classList.remove('copied');
+                    copyBtn.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14"><rect x="3" y="3" width="13" height="13" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 8h13v13a2 2 0 0 1-2 2H8V8z" fill="none" stroke="currentColor" stroke-width="2"/></svg>';
+                }, 1500);
+            });
+        }
+    };
     lbl.appendChild(this.severity); lbl.appendChild(this.score);
     lbl.appendChild(document.createTextNode(' ')); lbl.appendChild(this.vector);
+    lbl.appendChild(copyBtn);
     rdd.appendChild(lbl); rdl.appendChild(rdd); rl.appendChild(rdl);
     board.appendChild(rl);
 
