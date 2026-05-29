@@ -36,6 +36,12 @@
         if (hashVec.length > 0) {
             c.set(hashVec);
         }
+        window.addEventListener('hashchange', function() {
+            var newHash = decodeURIComponent(window.location.hash.substring(1));
+            if (newHash.length > 0 && newHash !== c.get().vector) {
+                c.set(newHash);
+            }
+        });
     </script>
 </body>
 </html>
