@@ -5,7 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tripwire — 7imbitz</title>
     <link rel="stylesheet" href="/style.css">
-    <link rel="icon" type="image/png" href="/cvss/favicon.png">
+    <style>
+        article h3 { margin-top: 2.2em; }
+        article h4 { margin-top: 1.6em; }
+        article p, article li { line-height: 1.75; }
+        article figure { margin: 1.5em 0; text-align: center; }
+        article figure img { border: 1px solid var(--border); border-radius: 6px; }
+        article figcaption { margin-top: -0.6em; }
+        article ol > li > pre { margin: 0.6em 0; }
+    </style>
 </head>
 <body>
     <header>
@@ -29,11 +37,55 @@
             <p>The motivation behind the <a href="https://github.com/7imbitz/Tripwire">Tripwire</a> extension was a persistent and frustrating problem in web application security testing. My colleague consistently found SQL Injection vulnerabilities in endpoints that I had already reviewed and missed. After reviewing his methods, we realized the core difference wasn't the attack payload, but the <i>speed and accuracy of parameter identification</i>.</p>
             <p>While tools like Burp Suite or automated scanners can find endpoints, the key to SQLi is often knowing <b>which</b> specific parameter within the endpoint is being used unsafely in the backend query. Tripwire was created to be that efficient "tripwire" that marks potential targets for manual validation.</p>
 
+            <h3>Demo: Tripwire in Action</h3>
+            <p>Below is Tripwire running inside Burp Suite while browsing an intentionally vulnerable lab. Every request that carries parameters is listed on the left, and anything that looks injectable is flagged in the <b>Result</b> column.</p>
+
+            <figure>
+                <a href="/images/Tripwire/Tripwire_Example.png" target="_blank" rel="noopener">
+                    <img src="/images/Tripwire/Tripwire_Example.png" alt="Tripwire tab in Burp Suite showing flagged requests and the highlighted evidence tab" loading="lazy">
+                </a>
+                <figcaption class="small text-muted">Click the image to open it full size.</figcaption>
+            </figure>
+
+            <h4>How to read the screenshot</h4>
+            <ul>
+                <li><b>Params</b>: the exact parameter that was tampered with (<code>id</code>, <code>bild</code>, ...). One row is created per parameter, so you know precisely where to look.</li>
+                <li><b>Orig. / Modif. / Repair. Len</b>: response length of the original request, the <i>broken</i> request (<code>'</code>) and the <i>repaired</i> request (<code>''</code>). A modified length that differs from the repaired one is a good hint that the quote reached the query.</li>
+                <li><b>Result</b>: rows marked <code>Possible(?)</code> matched a SQL error signature after the quote was injected.</li>
+                <li><b>Evidence tab</b>: the response body of the broken request with the matched keywords highlighted. In the screenshot, <code>SQL syntax</code> and <code>MySQL</code> are highlighted in the leaked database error.</li>
+            </ul>
+
+            <h3>Try It Yourself</h3>
+
+            <h4>Installation</h4>
+            <ol>
+                <li>Download <a href="http://portswigger.net/burp/download.html">Burp Suite</a> and the <a href="http://www.jython.org/download.html">Jython standalone JAR</a>.</li>
+                <li>In Burp, go to <b>Extender &rarr; Options &rarr; Python Environment</b> and select the Jython JAR.</li>
+                <li>Clone the extension:
+                    <pre><code>git clone https://github.com/7imbitz/Tripwire.git</code></pre>
+                </li>
+                <li>Go to <b>Extender &rarr; Extensions &rarr; Add</b> and choose <code>extension.py</code>.</li>
+                <li>A new <b>Tripwire</b> tab should appear in Burp.</li>
+            </ol>
+
+            <h4>Usage</h4>
+            <ol>
+                <li>Open the <b>Tripwire</b> tab, then the <b>Configuration</b> sub-tab.</li>
+                <li>Switch <b>Capture ON</b>. Capture is disabled by default.</li>
+                <li>Browse the target as usual. Tripwire analyses every request with parameters in the background.</li>
+                <li>Look for <code>Possible(?)</code> in the <b>Result</b> column and open the <b>Evidence</b> tab to see the highlighted response.</li>
+                <li>Confirm the finding manually, since Tripwire only marks candidates, it does not prove exploitability.</li>
+            </ol>
+
+            <p>The SQL error signatures and the list of ignored file extensions can both be edited from the Configuration tab. Static files (<code>.js</code>, <code>.css</code>, images, fonts, ...), telemetry-style paths (<code>log</code>, <code>analytics</code>, <code>tracking</code>, ...) and unsupported content types are skipped by default to keep the noise down.</p>
+
+            <hr>
+
             <h3>Core Functionality Explained</h3>
             <p>Tripwire works by intercepting HTTP requests and intelligently logging all unique GET and POST parameters associated with an endpoint. </p>
 
             <h4>1. Data Parsing and Parameter Extraction</h4>
-            <p>This is the first and most critical stage, performed by the extension's core logic (often in a central handler class). It processes the raw HTTP traffic and extracts data regardless of its encoding (e.g., URL-encoded, JSON, form data).</p>
+            <p>This is the first and most critical stage, performed by the extension's core logic (in a central handler class). It processes the raw HTTP traffic and extracts data regardless of its encoding (e.g., URL-encoded, JSON, form data).</p>
 
             <div class="bg-light p-3 rounded-lg my-3">
                 <p class="mb-1 text-primary"><strong>Code Focus: Parsing Input</strong></p>
@@ -59,7 +111,7 @@ function extract_parameters(request):
                 <p>This part is crucial because it transforms the messy network stream into a clean dictionary of key-value pairs, identifying every potential injection point.</p>
             </div>
 
-            <h4>2. SQL Injection</h4>
+            <h4>2. Break and Repair SQL Injection</h4>
             <p>Once parameters are extracted, the extension's job is to test each parameter with the <i>Break and Repair</i> <a href="https://tib3rius.com/sqli">method</a></p>
             
             <div class="bg-light p-3 rounded-lg my-3">
@@ -90,6 +142,8 @@ if modifiedResponse:
     url = requestInfo.getUrl()</code></pre>
                 <p>This method is the identity of the "Tripwire"; It will trip and marked as "possible" when a parameter with sql error signature are identified. </p>
             </div>
+
+            <hr>
 
             <h3>Conclusion</h3>
             <p>Tripwire is a direct response to a common problem: overwhelming data noise. By focusing programmatically on the <i>parsing</i> and <i>unique identification</i> of request parameters, it allowed us to skip the tedious work of manually tracking inputs and jump straight to vulnerability validation, making our testing process much more effective.</p>
