@@ -248,13 +248,13 @@
         {
             id: 'hood',
             title: 'Under the Hood',
-            group: 'basics',
+            group: 'bonus',
             difficulty: 'medium',
             unit: 'Chamber',
             hud: 'basic',
             theme: 'steel',
             ready: true,
-            requires: ['local'],
+            requires: ['ai', 'models', 'local'], // bonus: opens once every Basics dungeon is cleared
             blurb: 'Tokens per second, caches, and what separates a normal model from an uncensored one.',
             thumb: 'speed',
             rooms: HOOD_ROOMS
@@ -268,7 +268,7 @@
             hud: 'forge',
             theme: 'default',
             ready: true,
-            requires: ['ai', 'models', 'local', 'hood'], // opens only when every Basics dungeon is cleared
+            requires: ['ai', 'models', 'local'], // bonus: opens once every Basics dungeon is cleared
             blurb: 'Tweak a companion like a modelfile. First dial: temperature. Pip joins you here.',
             thumb: 'hall',
             rooms: ROOMS

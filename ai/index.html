@@ -21,8 +21,18 @@
 
         <!-- ================= HUB ================= -->
         <section id="hub" class="hub" aria-label="Dungeon select">
-            <p class="hub-intro">Each dungeon teaches a different idea about AI. Clear them in order. Your progress is saved in this browser.</p>
+            <p class="hub-intro">Each dungeon teaches a different idea about AI. Clear the Basics in order, then try the bonus dungeons. Your progress is saved in this browser.</p>
+            <div class="hub-tools">
+                <button class="grim-btn" id="open-grimoire" type="button">&#128214; Grimoire <span id="grim-count"></span></button>
+                <span class="small">Every idea you learn is collected here as a card you can revisit.</span>
+            </div>
             <div id="hub-groups"></div>
+        </section>
+
+        <!-- ================= GRIMOIRE ================= -->
+        <section id="grimoire" class="hub" aria-label="Grimoire" hidden>
+            <p class="hub-intro" id="grim-intro"></p>
+            <div id="grimoire-list"></div>
         </section>
 
         <!-- ================= GAME ================= -->

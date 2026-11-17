@@ -32,6 +32,7 @@
         bars: $('bars'), hp: $('hp'), objective: $('objective'),
         note: $('note'), floorLabel: $('floor-label'), log: $('log'),
         hub: $('hub'), hubGroups: $('hub-groups'), game: $('game'),
+        grimoire: $('grimoire'), grimList: $('grimoire-list'), grimCount: $('grim-count'), grimIntro: $('grim-intro'), openGrim: $('open-grimoire'),
         toHub: $('to-hub'), backLink: $('back-link'),
         screenWrap: $('screen-wrap'), puzzle: $('puzzle'),
         hud: $('hud'), panelDial: $('panel-dial'), panelBars: $('panel-bars'),
@@ -301,7 +302,7 @@
                 ['<b>Loot: the Modelfile Anvil.</b> You know where models can run and what that costs.',
                     '<b>Local:</b> private, works offline and has a fixed cost, but is limited by your hardware. Quantization lets bigger models fit.',
                     '<b>Cloud:</b> the strongest models and no hardware to manage, but you pay per use and your data leaves your machine.'],
-                ['<span class="tip">Next: Under the Hood. How fast do models run, what do caches save, and what is an uncensored model?</span>']
+                ['<span class="tip">The bonus dungeons are now open: <b>Under the Hood</b> (speed, caches, uncensored models) and <b>The Forge</b> (tweak Pip like a modelfile). The <b>Grimoire</b> on the hub keeps every idea you have learned.</span>']
             ],
             clearButton: 'Back to the dungeons'
         },
@@ -318,7 +319,7 @@
                     '<b>Speed</b> is tokens per second plus time to first token. Model size, quantization and hardware decide it.',
                     '<b>Caches</b> reuse earlier work: the KV cache lives inside the model, and prompt caching reuses an identical prefix. Put stable content first.',
                     '<b>Uncensored</b> means fewer refusals, not more intelligence. It moves the safety job from the model to you.'],
-                ['<span class="tip">The Forge is now open. Local models are tuned with a <b>modelfile</b>: temperature, context length (num_ctx) and more.</span>']
+                ['<span class="tip">Try the Forge next. Local models are tuned with a <b>modelfile</b>: temperature, context length (num_ctx) and more.</span>']
             ],
             clearButton: 'Back to the dungeons'
         },
@@ -418,7 +419,7 @@
     var S = {
         mode: 'hub',         // 'hub' | 'overlay' | 'play' | 'puzzle'
         dungeon: null,
-        progress: { cleared: {} },
+        progress: { cleared: {}, cards: {} },
         puzzleSolved: false,
         roomIndex: 0,
         room: null,
@@ -682,6 +683,7 @@
     function maybeShowLesson(key) {
         if (S.lessons[key]) { return false; }
         S.lessons[key] = true;
+        collectCard(key);
         showOverlay({ title: 'What you just learned', pages: lessonPages(key), button: 'Got it' });
         return true;
     }
@@ -840,6 +842,7 @@
         var pages = [[msg]];
         if (!S.lessons.sampling) {
             S.lessons.sampling = true;
+            collectCard('sampling');
             pages.push(LESSONS.sampling);
         }
         showOverlay({
@@ -1132,9 +1135,12 @@
         try {
             var raw = window.localStorage.getItem(PROGRESS_KEY);
             var p = raw ? JSON.parse(raw) : null;
-            return { cleared: (p && p.cleared && typeof p.cleared === 'object') ? p.cleared : {} };
+            return {
+                cleared: (p && p.cleared && typeof p.cleared === 'object') ? p.cleared : {},
+                cards: (p && p.cards && typeof p.cards === 'object') ? p.cards : {}
+            };
         } catch (e) {
-            return { cleared: {} };
+            return { cleared: {}, cards: {} };
         }
     }
 
@@ -1143,11 +1149,104 @@
     }
 
     /* ------------------------------------------------------------------ */
+    /* Grimoire: every lesson collected as a card you can revisit          */
+    /* ------------------------------------------------------------------ */
+    // Order here is the order shown. `dungeon` ties a card to the dungeon that teaches it.
+    var CARD_META = {
+        rules:      { dungeon: 'ai',     title: 'Rule-based systems',        where: 'The Rule Golem',       line: 'Rules are exact and explainable, but only cover the cases someone thought of.' },
+        learning:   { dungeon: 'ai',     title: 'Machine learning',          where: 'The Learner Golem',    line: 'Learning finds patterns from examples. Always test it on data it has not seen.' },
+        vault:      { dungeon: 'ai',     title: 'Choosing the right tool',   where: 'The Vault of Choices', line: 'Rules for exact logic, learning for fuzzy patterns, and often both together.' },
+        kinds:      { dungeon: 'models', title: 'Kinds of models',           where: 'The Sorting Gate',     line: 'Ask what the output is (label, number, new content, ranking, action) to pick the kind.' },
+        tokens:     { dungeon: 'models', title: 'Next-token prediction',     where: 'The Token Mill',       line: 'Models pick likely next tokens, so fluent does not mean true. Check what matters.' },
+        agent:      { dungeon: 'models', title: 'Agents and harnesses',      where: 'The Agent\'s Workshop', line: 'An agent is a model plus tools in a loop. Give it only the tools the task needs.' },
+        quant:      { dungeon: 'local',  title: 'Quantization',              where: 'The Packing Room',     line: 'It shrinks a model to fit memory. A bigger quantized model usually beats a smaller full-precision one.' },
+        privacy:    { dungeon: 'local',  title: 'Data locality',             where: 'The Data Gate',        line: 'Choose local or cloud by how sensitive the data is, not by habit.' },
+        cost:       { dungeon: 'local',  title: 'Break-even',                where: 'The Toll Booth',       line: 'Cloud is pay-per-use and local is a fixed cost. Estimate your volume to find the crossover.' },
+        speed:      { dungeon: 'hood',   title: 'Tokens per second',         where: 'The Speed Run',        line: 'Match speed to the job: wait for the first token, streaming rate, or total throughput.' },
+        cache:      { dungeon: 'hood',   title: 'Caching',                   where: 'The Cache Vault',      line: 'Put stable content first in a prompt so the cache can reuse it.' },
+        guardrails: { dungeon: 'hood',   title: 'Alignment and guardrails',  where: 'The Guardrail Gate',   line: 'Uncensored removes a model\'s refusals, not the risk. Add protection somewhere else.' },
+        contrast:   { dungeon: 'forge',  title: 'Temperature',               where: 'The Wander Test',      line: 'Low is repeatable, high is varied. Choose by the task.' },
+        sampling:   { dungeon: 'forge',  title: 'Sampling',                  where: 'The Hall of Repeats',  line: 'Models sample from odds, so unlikely outcomes sometimes happen at higher temperature.' },
+        stuck:      { dungeon: 'forge',  title: 'Greedy decoding',           where: 'The Garden of Wonders', line: 'At temperature 0 a model can loop. A little randomness lets it explore.' }
+    };
+
+    // A card is collected when its lesson was shown, or when its whole dungeon was already cleared
+    // (so progress saved before the grimoire existed still counts).
+    function isCollected(key) {
+        var m = CARD_META[key];
+        return !!(S.progress.cards[key] || (m && S.progress.cleared[m.dungeon]));
+    }
+
+    function collectCard(key) {
+        if (!CARD_META[key] || S.progress.cards[key]) { return; }
+        S.progress.cards[key] = true;
+        saveProgress();
+    }
+
+    function grimoireTotals() {
+        var keys = Object.keys(CARD_META);
+        var got = keys.filter(isCollected).length;
+        return { got: got, total: keys.length };
+    }
+
+    function updateGrimCount() {
+        var t = grimoireTotals();
+        el.grimCount.textContent = t.got + ' / ' + t.total;
+    }
+
+    function renderGrimoire() {
+        el.grimList.textContent = '';
+        var t = grimoireTotals();
+        el.grimIntro.textContent = 'You have collected ' + t.got + ' of ' + t.total + ' cards. Each one is an idea from a dungeon. Open a card to read it again. Locked cards show where to find them.';
+        L.DUNGEONS.forEach(function (d) {
+            var keys = Object.keys(CARD_META).filter(function (k) { return CARD_META[k].dungeon === d.id; });
+            if (!keys.length) { return; }
+            el.grimList.appendChild(mk('h2', 'group-title', d.title));
+            var grid = mk('div', 'gcards');
+            keys.forEach(function (k) {
+                var m = CARD_META[k];
+                if (isCollected(k)) {
+                    var card = mk('details', 'gcard');
+                    var sum = mk('summary', '');
+                    sum.appendChild(mk('span', 'g-title', m.title));
+                    sum.appendChild(mk('span', 'g-where', m.where));
+                    sum.appendChild(mk('span', 'g-line', m.line));
+                    card.appendChild(sum);
+                    var body = mk('div', 'g-body');
+                    LESSONS[k].forEach(function (html) {
+                        var p = document.createElement('p');
+                        p.innerHTML = html; // constant strings from LESSONS above, never user input
+                        body.appendChild(p);
+                    });
+                    card.appendChild(body);
+                    grid.appendChild(card);
+                } else {
+                    var locked = mk('div', 'gcard locked');
+                    locked.appendChild(mk('span', 'g-title', '???'));
+                    locked.appendChild(mk('span', 'g-where', 'Found in ' + d.title + ' › ' + m.where));
+                    grid.appendChild(locked);
+                }
+            });
+            el.grimList.appendChild(grid);
+        });
+    }
+
+    function showGrimoire() {
+        el.hub.hidden = true;
+        el.grimoire.hidden = false;
+        el.toHub.hidden = false;
+        el.backLink.hidden = true;
+        el.floorLabel.textContent = 'Grimoire';
+        renderGrimoire();
+        if (window.scrollTo) { window.scrollTo(0, 0); }
+    }
+
+    /* ------------------------------------------------------------------ */
     /* Dungeon hub                                                         */
     /* ------------------------------------------------------------------ */
     var GROUPS = [
         { id: 'basics', title: 'The Basics' },
-        { id: 'bonus', title: 'Bonus Dungeon' }
+        { id: 'bonus', title: 'Bonus Dungeons' }
     ];
     var BADGE_TEXT = { easy: 'Easy', medium: 'Medium', hard: 'Hard', bonus: 'Bonus' };
 
@@ -1261,11 +1360,13 @@
         S.room = null;
         S.mode = 'hub';
         el.hub.hidden = false;
+        el.grimoire.hidden = true;
         el.game.hidden = true;
         el.toHub.hidden = true;
         el.backLink.hidden = false;
         el.floorLabel.textContent = 'Choose a dungeon';
         renderHub();
+        updateGrimCount();
         if (window.scrollTo) { window.scrollTo(0, 0); }
     }
 
@@ -1296,6 +1397,7 @@
     }
 
     el.toHub.addEventListener('click', showHub);
+    el.openGrim.addEventListener('click', showGrimoire);
 
     /* ------------------------------------------------------------------ */
     /* Boot                                                                */

@@ -322,6 +322,38 @@ kbd {
 .badge.hard { background: var(--red); color: #fff; }
 .badge.bonus { background: #b18cff; }
 
+/* ---------- grimoire ---------- */
+.hub-tools { display: flex; align-items: center; flex-wrap: wrap; gap: 0.8em; margin: 0 0 0.4em; }
+.grim-btn { background: #b18cff; border-bottom-color: #7d57d6; color: #14101f; }
+.grim-btn:hover { background: #c7a8ff; }
+.grim-btn span { font-weight: bold; }
+
+.gcards { display: grid; gap: 0.5em; }
+
+.gcard {
+    background: var(--panel);
+    border: 2px solid var(--panel-border);
+    border-left: 6px solid #b18cff;
+    border-radius: 6px;
+    padding: 0.5em 0.8em;
+}
+.gcard[open] { background: #211a3d; }
+.gcard summary { cursor: pointer; list-style: none; display: grid; gap: 0.1em; }
+.gcard summary::-webkit-details-marker { display: none; }
+.gcard summary::before { content: "\25B8"; color: #b18cff; margin-right: 0.4em; }
+.gcard[open] summary::before { content: "\25BE"; }
+.gcard summary { display: block; }
+.g-title { font-weight: bold; color: var(--text); }
+.g-where { font-size: 0.75em; color: var(--muted); margin-left: 0.6em; }
+.g-line { display: block; font-size: 0.85em; color: var(--accent); margin: 0.15em 0 0 1.1em; }
+.gcard .g-body { margin-top: 0.5em; font-size: 0.9em; }
+.gcard .g-body p { margin: 0.5em 0; }
+.gcard .g-body b { color: var(--accent); }
+.gcard .g-body i { color: var(--cyan); font-style: normal; font-weight: bold; }
+
+.gcard.locked { border-left-color: var(--panel-border); opacity: 0.65; }
+.gcard.locked .g-title { color: var(--muted); }
+
 /* ---------- puzzle panel (replaces the canvas while open) ---------- */
 .screen-wrap.puzzle-open #screen { display: none; }
 .puzzle[hidden] { display: none; }
