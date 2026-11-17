@@ -29,9 +29,27 @@
      */
     var ROOMS = [
         {
+            id: 'wander',
+            title: 'Wander Test',
+            objective: 'Run Pip across once cold and once hot to open the door.',
+            trial: true,
+            map: [
+                '################',
+                '#..............#',
+                '#..............#',
+                '#..............#',
+                '#C............P#',
+                '#..............#',
+                '#..............#',
+                '#H.............D',
+                '################'
+            ]
+        },
+        {
             id: 'hall',
             title: 'Hall of Repeats',
             objective: 'Get Pip to the glowing plate to open the door.',
+            spikePenalty: 1.0, // weaker avoidance: a warm Pip really does step on spikes
             map: [
                 '################',
                 '#H.............D',
@@ -95,6 +113,118 @@
         }
     ];
 
+    /* ---------------------------------------------------------------- */
+    /* Dungeon: What Is AI?  (no Pip yet: golems guard each door)        */
+    /* A = golem altar (walk into it to open its puzzle)                  */
+    /* ---------------------------------------------------------------- */
+    var AI_ROOMS = [
+        {
+            id: 'rules',
+            title: 'The Rule Golem',
+            objective: 'Write rules for the golem, then pass its test.',
+            noPip: true,
+            puzzle: 'rules',
+            map: [
+                '################',
+                '#..............#',
+                '#.##........##.#',
+                '#..............#',
+                '#H......A......D',
+                '#..............#',
+                '#.##........##.#',
+                '#..............#',
+                '################'
+            ]
+        },
+        {
+            id: 'learn',
+            title: 'The Learner Golem',
+            objective: 'Train the golem with examples, then test it on new creatures.',
+            noPip: true,
+            puzzle: 'learn',
+            map: [
+                '################',
+                '#..#........#..#',
+                '#..............#',
+                '#.......##.....#',
+                '#H......A......D',
+                '#.......##.....#',
+                '#..............#',
+                '#..#........#..#',
+                '################'
+            ]
+        },
+        {
+            id: 'vault',
+            title: 'The Vault of Choices',
+            objective: 'Decide: rules or learning? Get 5 of 6 right.',
+            noPip: true,
+            puzzle: 'vault',
+            map: [
+                '################',
+                '#..............#',
+                '#..#........#..#',
+                '#..............#',
+                '#H......A......D',
+                '#..............#',
+                '#..#........#..#',
+                '#..............#',
+                '################'
+            ]
+        }
+    ];
+
+    /*
+     * Dungeons: each one teaches a different idea, unlocked in order.
+     * `ready: false` dungeons show as "coming soon" on the hub.
+     */
+    var DUNGEONS = [
+        {
+            id: 'ai',
+            title: 'What Is AI?',
+            group: 'basics',
+            difficulty: 'easy',
+            unit: 'Chamber',
+            hud: 'basic',
+            ready: true,
+            unlockAfter: null,
+            blurb: 'Rules or examples? Meet two golems and find out what makes software "intelligent".',
+            thumb: 'rules',
+            rooms: AI_ROOMS
+        },
+        {
+            id: 'models',
+            title: 'Kinds of Models',
+            group: 'basics',
+            difficulty: 'easy',
+            ready: false,
+            unlockAfter: 'ai',
+            blurb: 'Classifiers, chatbots and agents. Hire the right AI for each job.'
+        },
+        {
+            id: 'local',
+            title: 'Local vs Cloud',
+            group: 'basics',
+            difficulty: 'medium',
+            ready: false,
+            unlockAfter: 'models',
+            blurb: 'Private and free, or powerful and paid? Pack your companion wisely.'
+        },
+        {
+            id: 'forge',
+            title: 'The Forge',
+            group: 'bonus',
+            difficulty: 'bonus',
+            unit: 'Room',
+            hud: 'forge',
+            ready: true,
+            unlockAfter: 'ai',
+            blurb: 'Tweak a companion like a modelfile. First dial: temperature. Pip joins you here.',
+            thumb: 'hall',
+            rooms: ROOMS
+        }
+    ];
+
     function parseRoom(def) {
         var grid = [];
         var room = {
@@ -102,6 +232,11 @@
             title: def.title,
             objective: def.objective,
             followHero: !!def.followHero,
+            trial: !!def.trial,
+            noPip: !!def.noPip,
+            puzzle: def.puzzle || null,
+            altar: null,
+            spikePenalty: def.spikePenalty != null ? def.spikePenalty : SPIKE_PENALTY,
             grid: grid,
             hero: { x: 1, y: 1 },
             pip: { x: 1, y: 1 },
@@ -118,6 +253,7 @@
                 if (c === 'P') { room.plate = { x: x, y: y }; }
                 if (c === 'D') { room.door = { x: x, y: y }; }
                 if (c === 'K') { room.chest = { x: x, y: y }; }
+                if (c === 'A') { room.altar = { x: x, y: y }; }
                 row.push(c);
             }
             grid.push(row);
@@ -136,7 +272,7 @@
     // Is this tile impassable for Pip right now?
     function pipBlocked(room, x, y, doorOpen) {
         var t = tileAt(room, x, y);
-        return t === '#' || t === 'K' || (t === 'D' && !doorOpen);
+        return t === '#' || t === 'K' || t === 'A' || (t === 'D' && !doorOpen);
     }
 
     // Raw preference for each move: closer to the target is better, spikes
@@ -146,7 +282,7 @@
             var nx = pos.x + d.dx;
             var ny = pos.y + d.dy;
             var s = -(Math.abs(nx - target.x) + Math.abs(ny - target.y));
-            if (tileAt(room, nx, ny) === 'S') { s -= SPIKE_PENALTY; }
+            if (tileAt(room, nx, ny) === 'S') { s -= room.spikePenalty; }
             return s;
         });
     }
@@ -214,7 +350,9 @@
         ROWS: ROWS,
         PIP_MAX_HP: PIP_MAX_HP,
         SPIKE_PENALTY: SPIKE_PENALTY,
-        ROOMS: ROOMS,
+        ROOMS: ROOMS,           // the Forge rooms (kept for the tuning scripts)
+        AI_ROOMS: AI_ROOMS,
+        DUNGEONS: DUNGEONS,
         parseRoom: parseRoom,
         tileAt: tileAt,
         pipBlocked: pipBlocked,
