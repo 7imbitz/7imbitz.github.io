@@ -116,7 +116,8 @@
         rules: '#4cc9f0', learn: '#06d6a0', vault: '#ffd166',
         sorting: '#b18cff', tokens: '#ff9f43', agent: '#ff6b9d',
         packing: '#4cc9f0', datagate: '#06d6a0', toll: '#ffd166',
-        speed: '#ffd166', cache: '#4cc9f0', guardgate: '#ef476f'
+        speed: '#ffd166', cache: '#4cc9f0', guardgate: '#ef476f',
+        sysprompt: '#06d6a0', context: '#b18cff', tokenunits: '#ff9f43'
     };
     Object.keys(GOLEM_RUNE).forEach(function (k) { sprite['golem_' + k] = makeSprite(SPRITES.golem, { r: GOLEM_RUNE[k] }); });
 
@@ -131,6 +132,7 @@
         default: { floorA: '#2b2547', floorB: '#272142', speck: '#332c55', wall: '#4a3d7a', wallDark: '#362c5c', wallLight: '#5d4f93' },
         teal:    { floorA: '#1f3a44', floorB: '#1b333c', speck: '#28505c', wall: '#2f6b7a', wallDark: '#21505c', wallLight: '#43899a' },
         ember:   { floorA: '#3d2b26', floorB: '#372621', speck: '#4d3830', wall: '#7a4a3a', wallDark: '#5c3529', wallLight: '#93614d' },
+        moss:    { floorA: '#22362d', floorB: '#1e3028', speck: '#2b4639', wall: '#3f7a5c', wallDark: '#2e5c45', wallLight: '#54976f' },
         steel:   { floorA: '#262d3d', floorB: '#222938', speck: '#303a4f', wall: '#4a5a7a', wallDark: '#364360', wallLight: '#62759b' }
     };
     var theme = THEMES.default;
@@ -286,6 +288,23 @@
                     '<b>Kinds:</b> classifiers pick labels, predictors forecast numbers, generators create content, recommenders rank, and agents act with tools.',
                     '<b>Language models</b> generate one token at a time from probabilities. That is why they can be fluent and wrong.',
                     '<b>Agents</b> are a model plus tools. Give a model only the tools the job needs.'],
+                ['<span class="tip">Next: Talking to Models. How do you give a model instructions, why does it forget, and what is a token really?</span>']
+            ],
+            clearButton: 'Back to the dungeons'
+        },
+        talk: {
+            intro: [
+                ['You know what kinds of models exist. Now learn to <b>talk</b> to them: how to give standing instructions, why they forget, and what a token really is.'],
+                ['Three chambers lie ahead: write a system prompt that passes four customer tests, keep a key fact inside a finite context window, and trim a prompt by its token cost.',
+                    '<span class="tip">Walk into a golem to challenge it.</span>']
+            ],
+            introButton: 'Enter the dungeon',
+            clearTitle: 'Talking to Models cleared!',
+            clear: [
+                ['<b>Loot: the Quill.</b>',
+                    'A <b>system prompt</b> is the standing brief. Be specific: a role, a format, boundaries, and what to do when a request is unclear. It guides the model but is not a lock.',
+                    'The <b>context window</b> is finite memory. When it fills, the oldest messages are forgotten, so pin what matters, summarise, and trim.',
+                    '<b>Tokens</b> are the unit you pay in, and what the model actually reads. It sees chunks, not letters.'],
                 ['<span class="tip">Next: Local vs Cloud. Where should a model run, and what does it cost?</span>']
             ],
             clearButton: 'Back to the dungeons'
@@ -384,6 +403,17 @@
         ],
         guardgate: [
             ['Some models refuse risky requests. Others have had that removed. Which one belongs where depends on who is using it and what could go wrong.', '<span class="tip">Walk into a golem to challenge it.</span>']
+        ],
+        prompt: [
+            ['Brightfix has hired you to set up its support assistant. Four customers are waiting, and the assistant will follow whatever <b>system prompt</b> you give it.',
+                'Choose the instructions to include, then run the four tests. Some instructions look fine but do nothing. One makes things worse.', '<span class="tip">Walk into a golem to challenge it.</span>']
+        ],
+        memory: [
+            ['A model can only see what fits in its <b>context window</b>. Sam told the assistant something important at the very start, and a long conversation has followed.',
+                'Decide what to keep, shrink, pin or drop so that the answer to the last question is safe.', '<span class="tip">Walk into a golem to challenge it.</span>']
+        ],
+        counter: [
+            ['Models read <b>tokens</b>, and every token is billed. A prompt that goes out a million times has to be lean, but it must still contain everything the model needs.', '<span class="tip">Walk into a golem to challenge it.</span>']
         ],
         wander: [
             ['Pip wants to reach the glowing plate. Every step it <b>scores</b> its four possible moves (closer to the plate scores higher) and then <b>picks one</b>.',
@@ -600,6 +630,21 @@
     /* Lessons: feel it -> name it -> use it                               */
     /* ------------------------------------------------------------------ */
     var LESSONS = {
+        sysprompt: [
+            '<b>Name it:</b> the <i>system prompt</i>: standing instructions a model receives before the conversation. It sets the role, the format, the boundaries and how to handle edge cases.',
+            '<b>In the real world:</b> vague instructions ("be helpful") change little, and contradictory ones ("answer anything") quietly cancel your rules. Specific, checkable instructions give predictable behaviour, and the prompt is billed on every request.',
+            '<b>Use it:</b> state the role, the output format, what not to do and what to do when unsure. Then test it with awkward inputs. A system prompt is guidance, not a security boundary: users can still try to talk past it.'
+        ],
+        context: [
+            '<b>Name it:</b> the <i>context window</i>: the amount of text, measured in tokens, a model can see at once. Anything outside it is simply not known.',
+            '<b>In the real world:</b> this is why a long chat seems to forget how it started. The oldest turns fall out first. Bigger windows help but cost more memory and money, and details can still get lost in the middle.',
+            '<b>Use it:</b> put what must never be forgotten in the system prompt, summarise old turns, and trim what is not needed.'
+        ],
+        tokenunits: [
+            '<b>Name it:</b> the <i>token</i>: the chunk of text a model actually reads and writes, and the unit you are billed in. For English, about four characters or three quarters of a word.',
+            '<b>In the real world:</b> both your prompt and the reply are charged, the system prompt included on every request. And because models read tokens rather than letters, they are surprisingly bad at tasks like counting letters in a word.',
+            '<b>Use it:</b> cut fluff from prompts that run at scale, and do not trust a model with letter-level tricks without a tool.'
+        ],
         speed: [
             '<b>Name it:</b> <i>tokens per second</i> is how fast text streams out. <i>Time to first token</i> is the wait before it starts, mostly the time spent reading your prompt.',
             '<b>In the real world:</b> generating tokens is mostly limited by how fast the model\'s weights can be read from memory. So bigger models and higher precision run slower, and quantization often makes a model faster as well as smaller.',
@@ -877,7 +922,8 @@
         rules: 'rules', learn: 'learning', vault: 'vault',
         sorting: 'kinds', tokens: 'tokens', agent: 'agent',
         packing: 'quant', datagate: 'privacy', toll: 'cost',
-        speed: 'speed', cache: 'cache', guardgate: 'guardrails'
+        speed: 'speed', cache: 'cache', guardgate: 'guardrails',
+        sysprompt: 'sysprompt', context: 'context', tokenunits: 'tokenunits'
     };
 
     function openPuzzle() {
@@ -1162,6 +1208,9 @@
         quant:      { dungeon: 'local',  title: 'Quantization',              where: 'The Packing Room',     line: 'It shrinks a model to fit memory. A bigger quantized model usually beats a smaller full-precision one.' },
         privacy:    { dungeon: 'local',  title: 'Data locality',             where: 'The Data Gate',        line: 'Choose local or cloud by how sensitive the data is, not by habit.' },
         cost:       { dungeon: 'local',  title: 'Break-even',                where: 'The Toll Booth',       line: 'Cloud is pay-per-use and local is a fixed cost. Estimate your volume to find the crossover.' },
+        sysprompt:  { dungeon: 'talk',   title: 'The system prompt',         where: 'The Prompt Forge',     line: 'State a role, a format, boundaries and what to do when unsure. It guides, but it is not a lock.' },
+        context:    { dungeon: 'talk',   title: 'The context window',        where: 'The Memory Hall',      line: 'A model only sees what fits. Pin what matters, summarise, and trim the rest.' },
+        tokenunits: { dungeon: 'talk',   title: 'Tokens as units',           where: 'The Token Counter',    line: 'You pay in tokens, and models read tokens, not letters. Cut fluff at scale.' },
         speed:      { dungeon: 'hood',   title: 'Tokens per second',         where: 'The Speed Run',        line: 'Match speed to the job: wait for the first token, streaming rate, or total throughput.' },
         cache:      { dungeon: 'hood',   title: 'Caching',                   where: 'The Cache Vault',      line: 'Put stable content first in a prompt so the cache can reuse it.' },
         guardrails: { dungeon: 'hood',   title: 'Alignment and guardrails',  where: 'The Guardrail Gate',   line: 'Uncensored removes a model\'s refusals, not the risk. Add protection somewhere else.' },

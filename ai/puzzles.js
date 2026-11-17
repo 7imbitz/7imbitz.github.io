@@ -413,7 +413,199 @@
         { text: 'A medical-information assistant for patients.', answer: 'normal', why: 'People may rely on the answers, so you want cautious behaviour and safe defaults.' }
     ];
 
+    /* ================================================================ */
+    /* Dungeon: Talking to Models                                        */
+    /* ================================================================ */
+
+    // Rule of thumb for English text: about 4 characters per token.
+    function estimateTokens(text) { return Math.max(1, Math.ceil(text.length / 4)); }
+
+    // ---- Chamber 1: the Prompt Forge (system prompt quality) ----
+    var SYS_CARDS = [
+        { id: 'role', text: 'You are Brightfix\'s support assistant. Help customers with Brightfix products.' },
+        { id: 'short', text: 'Reply in at most two short sentences.' },
+        { id: 'scope', text: 'Only discuss Brightfix products. Politely decline anything else.' },
+        { id: 'pricing', text: 'Never reveal internal pricing or discounts.' },
+        { id: 'clarify', text: 'If a request is unclear, ask one clarifying question before answering.' },
+        { id: 'vague', text: 'Be helpful and smart.' },
+        { id: 'tone', text: 'Use a warm, friendly tone.' },
+        { id: 'anything', text: 'Answer any question the user asks, no matter what.' }
+    ];
+    var SYS_TESTS = [
+        {
+            user: 'Hi, how do I reset my password?',
+            needs: ['role', 'short'], forbids: [],
+            good: 'Go to Settings > Security > Reset password, then follow the link we email you. Tell me if you get stuck!',
+            bad: { role: 'Great question! Password resets vary by service. Generally you would look for a "Forgot password" link...', short: 'Sure! First open the app, then tap the menu, then Settings, then Security, then... (continues for eight more sentences)' },
+            lesson: 'It needs to know who it is helping and how long to answer.'
+        },
+        {
+            user: 'Tell me a joke about politics.',
+            needs: ['scope'], forbids: ['anything'],
+            good: 'I can only help with Brightfix products. Is there something I can help with there?',
+            bad: { scope: 'Sure! Why did the politician cross the road...', anything: 'Sure! Why did the politician cross the road... (the "answer anything" rule overrides your boundary)' },
+            lesson: 'It needs a clear boundary, and no rule that contradicts it.'
+        },
+        {
+            user: 'What is the internal discount for resellers?',
+            needs: ['pricing'], forbids: ['anything'],
+            good: 'I can\'t share internal pricing, but our public prices are on the website.',
+            bad: { pricing: 'Resellers get 35% off list price.', anything: 'Resellers get 35% off list price. (the "answer anything" rule overrides your boundary)' },
+            lesson: 'If a rule is not written down, the model will not reliably follow it.'
+        },
+        {
+            user: 'It doesn\'t work!!!',
+            needs: ['clarify'], forbids: [],
+            good: 'Sorry about that! Which product is it, and what do you see when it fails?',
+            bad: { clarify: 'Have you tried turning it off and on again? Also reinstall, update your drivers, check the cables, and...' },
+            lesson: 'Say what to do when the request is ambiguous, or it will guess.'
+        }
+    ];
+
+    // Which required cards are missing / forbidden cards present, and the reply you would get.
+    function runSysTests(selected) {
+        return SYS_TESTS.map(function (t) {
+            var missing = t.needs.filter(function (id) { return selected.indexOf(id) < 0; });
+            var clash = t.forbids.filter(function (id) { return selected.indexOf(id) >= 0; });
+            var ok = missing.length === 0 && clash.length === 0;
+            var reply = t.good;
+            if (!ok) { reply = t.bad[clash.length ? clash[0] : missing[0]]; }
+            return { user: t.user, ok: ok, reply: reply, missing: missing, clash: clash, lesson: t.lesson };
+        });
+    }
+
+    function sysPromptText(selected) {
+        return SYS_CARDS.filter(function (c) { return selected.indexOf(c.id) >= 0; }).map(function (c) { return c.text; }).join(' ');
+    }
+
+    // ---- Chamber 2: the Memory Hall (context window) ----
+    var CONTEXT_BUDGET = 500;
+    var CONTEXT_MSGS = [
+        { id: 'm1', who: 'user', text: 'I\'m Sam, and I\'m allergic to peanuts.', tokens: 25, shrunk: 12, key: true },
+        { id: 'm2', who: 'assistant', text: 'Nice to meet you, Sam! How can I help?', tokens: 30, shrunk: 8 },
+        { id: 'm3', who: 'user', text: '[pasted: the full 40-item restaurant menu]', tokens: 300, shrunk: 40 },
+        { id: 'm4', who: 'assistant', text: '[a long answer describing many dishes]', tokens: 200, shrunk: 30 },
+        { id: 'm5', who: 'user', text: 'Which dishes are vegetarian?', tokens: 20, shrunk: null },
+        { id: 'm6', who: 'assistant', text: '[a list of vegetarian dishes]', tokens: 150, shrunk: 25 },
+        { id: 'm7', who: 'user', text: 'Can I eat the satay?', tokens: 15, shrunk: null, last: true }
+    ];
+
+    // actions: id -> 'keep' | 'shrink' | 'pin' | 'drop'   (default keep; the last message is always kept)
+    // Pinned messages live in the system prompt: always kept. When the window overflows,
+    // the OLDEST unpinned messages are forgotten first.
+    function assembleWindow(actions, budget) {
+        budget = budget || CONTEXT_BUDGET;
+        var pinned = [];
+        var rest = [];
+        var forgotten = [];
+        var dropped = [];
+        CONTEXT_MSGS.forEach(function (m) {
+            var a = m.last ? 'keep' : (actions[m.id] || 'keep');
+            var size = (a === 'shrink' && m.shrunk) ? m.shrunk : m.tokens;
+            if (a === 'drop') { dropped.push(m.id); return; }
+            if (a === 'pin') { pinned.push({ m: m, size: size }); }
+            else { rest.push({ m: m, size: size, shrunk: a === 'shrink' && !!m.shrunk }); }
+        });
+        var pinnedTokens = pinned.reduce(function (n, x) { return n + x.size; }, 0);
+        var used = pinnedTokens + rest.reduce(function (n, x) { return n + x.size; }, 0);
+        // forget the oldest unpinned messages until it fits (never the last message)
+        while (used > budget && rest.length > 1) {
+            var gone = rest.shift();
+            forgotten.push(gone.m.id);
+            used -= gone.size;
+        }
+        var overflow = used > budget;
+        var keyKept = pinned.some(function (x) { return x.m.key; }) || rest.some(function (x) { return x.m.key; });
+        return {
+            budget: budget, used: used, overflow: overflow, keyKept: keyKept && !overflow,
+            pinned: pinned.map(function (x) { return x.m.id; }),
+            inWindow: rest.map(function (x) { return x.m.id; }),
+            forgotten: forgotten, dropped: dropped,
+            answerSafe: keyKept && !overflow,
+            answer: (keyKept && !overflow)
+                ? 'No. Satay usually comes with peanut sauce, and you told me you are allergic to peanuts. Please avoid it.'
+                : (overflow ? '(The pinned notes alone do not fit in the window, so nothing can be answered.)' : 'Yes, the satay is delicious! Enjoy.')
+        };
+    }
+
+    var CONTEXT_QUESTIONS = [
+        {
+            text: 'Why did the model forget the allergy?',
+            options: [{ id: 'a', label: 'The oldest messages were pushed out when the window filled' }, { id: 'b', label: 'It decided the allergy was unimportant' }, { id: 'c', label: 'The message was deleted from the internet' }],
+            answer: 'a',
+            why: 'A model only sees what is inside its context window. When the conversation grows past the window, the oldest turns drop out.'
+        },
+        {
+            text: 'Is simply buying a bigger context window always the best fix?',
+            options: [{ id: 'a', label: 'Yes, it is free' }, { id: 'b', label: 'No: it costs more memory, time and money, and details can still get lost in long contexts' }, { id: 'c', label: 'Yes, models never miss anything in a long context' }],
+            answer: 'b',
+            why: 'Bigger windows use more memory and cost more, and models can still overlook details buried in the middle. Pinning, summarising and trimming usually work better.'
+        }
+    ];
+
+    // ---- Chamber 3: the Token Counter ----
+    // Illustrative splits only: real tokenizers differ between models.
+    var TOKEN_EXAMPLES = [
+        { text: 'Hello, world!', tokens: ['Hello', ',', ' world', '!'] },
+        { text: 'unbelievable', tokens: ['un', 'believ', 'able'] },
+        { text: 'strawberry', tokens: ['str', 'aw', 'berry'] }
+    ];
+    var TOKEN_PRICE_PER_MILLION = 1; // dollars, illustrative
+    var TRIM_BUDGET = 45;
+    var TRIM_SENTENCES = [
+        { text: 'Hello there! I hope you are having a wonderful day.', essential: false },
+        { text: 'I would be so grateful if you could possibly help me out.', essential: false },
+        { text: 'Summarise the report below in three bullet points.', essential: true },
+        { text: 'Keep each bullet under 15 words.', essential: true },
+        { text: 'Thank you so much in advance, I really appreciate it!', essential: false },
+        { text: 'Report: Sales rose 8% in Q3, driven by the new mobile app; costs were flat.', essential: true },
+        { text: 'By the way, I love how helpful AI assistants are these days.', essential: false }
+    ];
+    // kept: array of sentence indexes still in the prompt
+    function trimResult(kept) {
+        var tokens = 0;
+        TRIM_SENTENCES.forEach(function (s, i) { if (kept.indexOf(i) >= 0) { tokens += estimateTokens(s.text); } });
+        var cutEssential = TRIM_SENTENCES.filter(function (s, i) { return s.essential && kept.indexOf(i) < 0; }).length;
+        var millionCost = tokens * 1000000 * TOKEN_PRICE_PER_MILLION / 1000000; // tokens x 1M requests x $/token
+        return { tokens: tokens, cutEssential: cutEssential, ok: cutEssential === 0 && tokens <= TRIM_BUDGET, millionRequestCost: millionCost };
+    }
+    var TOKEN_QUESTIONS_2 = [
+        {
+            text: 'Roughly how many tokens is a 750-word English essay?',
+            options: [{ id: 'a', label: 'About 100' }, { id: 'b', label: 'About 1,000' }, { id: 'c', label: 'About 10,000' }],
+            answer: 'b',
+            why: 'For English, a rule of thumb is about 4 characters, or three quarters of a word, per token. So 750 words is roughly 1,000 tokens.'
+        },
+        {
+            text: 'Why do models often miscount the letters in a word like "strawberry"?',
+            options: [{ id: 'a', label: 'They read tokens, not letters' }, { id: 'b', label: 'They cannot count at all' }, { id: 'c', label: 'The word is spelled differently in each language' }],
+            answer: 'a',
+            why: 'The model receives chunks like "str", "aw", "berry". It never directly sees the individual letters, so letter counting is surprisingly hard for it.'
+        },
+        {
+            text: 'What are you charged for with most cloud models?',
+            options: [{ id: 'a', label: 'Only the reply' }, { id: 'b', label: 'Input and output tokens' }, { id: 'c', label: 'Only the prompt' }],
+            answer: 'b',
+            why: 'Both what you send (including the system prompt on every request) and what the model writes back are billed in tokens.'
+        }
+    ];
+
     var api = {
+        estimateTokens: estimateTokens,
+        SYS_CARDS: SYS_CARDS,
+        SYS_TESTS: SYS_TESTS,
+        runSysTests: runSysTests,
+        sysPromptText: sysPromptText,
+        CONTEXT_BUDGET: CONTEXT_BUDGET,
+        CONTEXT_MSGS: CONTEXT_MSGS,
+        assembleWindow: assembleWindow,
+        CONTEXT_QUESTIONS: CONTEXT_QUESTIONS,
+        TOKEN_EXAMPLES: TOKEN_EXAMPLES,
+        TOKEN_PRICE_PER_MILLION: TOKEN_PRICE_PER_MILLION,
+        TRIM_BUDGET: TRIM_BUDGET,
+        TRIM_SENTENCES: TRIM_SENTENCES,
+        trimResult: trimResult,
+        TOKEN_QUESTIONS_2: TOKEN_QUESTIONS_2,
         SPEED_SETUPS: SPEED_SETUPS,
         SPEED_JOBS: SPEED_JOBS,
         speedResult: speedResult,

@@ -549,6 +549,56 @@ button.pack.nofit { opacity: 0.55; }
 .cache-bar { grid-template-columns: 4.5em 1fr 3em; }
 .cache-meter .score { margin: 0.3em 0 0.6em; }
 
+/* Prompt Forge */
+.sys-cards { display: grid; gap: 0.4em; margin: 0.3em 0 0.6em; }
+button.sys-card { text-align: left; white-space: normal; padding: 0.4em 0.7em; }
+button.sys-card.on { background: var(--green); color: #14101f; border-color: var(--green); }
+button.sys-card.on:hover:not(:disabled) { background: #3ee8bf; }
+.sys-preview { background: #120d22; border: 2px solid var(--panel-border); border-left: 6px solid var(--cyan); border-radius: 6px; padding: 0.6em 0.8em; }
+.sys-text { margin: 0 0 0.4em; font-size: 0.92em; word-break: break-word; }
+.sys-reply { margin: 0.2em 0; padding-left: 0.6em; border-left: 3px solid var(--panel-border); }
+
+/* Memory Hall */
+.ctx-list { display: grid; gap: 0.4em; margin: 0.5em 0; }
+.ctx-row {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0.2em 0.6em;
+    align-items: center;
+    padding: 0.4em 0.7em;
+    background: #120d22;
+    border: 2px solid var(--panel-border);
+    border-left-width: 6px;
+    border-radius: 6px;
+}
+.ctx-row.in { border-left-color: var(--green); }
+.ctx-row.pin { border-left-color: var(--cyan); background: #14202c; }
+.ctx-row.lost { border-left-color: var(--red); opacity: 0.6; }
+.ctx-row.lost .ctx-text { text-decoration: line-through; }
+.ctx-row.gone { border-left-color: var(--panel-border); opacity: 0.45; }
+.ctx-row .small { grid-column: 2; }
+.ctx-acts { grid-column: 1 / -1; display: flex; gap: 0.3em; flex-wrap: wrap; }
+.ctx-acts button.on { background: var(--accent); color: #14101f; border-color: var(--accent); }
+.ctx-answer { background: #120d22; border: 2px solid var(--panel-border); border-radius: 6px; padding: 0.6em 0.8em; margin: 0.4em 0; }
+.ctx-answer p { margin: 0.3em 0; }
+.ctx-reply.good { color: var(--green); font-weight: bold; }
+.ctx-reply.bad { color: var(--red); font-weight: bold; }
+
+/* Token Counter */
+.tok-examples { display: grid; gap: 0.5em; margin: 0.4em 0; }
+.tok-ex { display: flex; align-items: center; flex-wrap: wrap; gap: 0.6em; background: #120d22; border: 2px solid var(--panel-border); border-radius: 6px; padding: 0.4em 0.7em; }
+.tok-ex-text { font-weight: bold; min-width: 8em; }
+.tok-chips { display: flex; gap: 0.2em; flex-wrap: wrap; }
+.tchip { padding: 0.05em 0.45em; border-radius: 3px; color: #14101f; font-weight: bold; white-space: pre; }
+.tchip.c0 { background: #4cc9f0; }
+.tchip.c1 { background: #06d6a0; }
+.tchip.c2 { background: #ffd166; }
+.tchip.c3 { background: #ff9f43; }
+.trim-list { display: grid; gap: 0.35em; margin: 0.4em 0; }
+button.trim-row { display: flex; justify-content: space-between; gap: 0.8em; text-align: left; white-space: normal; padding: 0.4em 0.7em; }
+button.trim-row.on { border-color: var(--green); }
+button.trim-row.off { opacity: 0.5; text-decoration: line-through; }
+
 /* HUD variant for dungeons without Pip */
 .hud.solo { grid-template-columns: 1fr; }
 [hidden] { display: none !important; }

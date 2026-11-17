@@ -877,6 +877,228 @@
     }
 
     /* ---------------------------------------------------------------- */
+    /* Talking to Models, chamber 1: the Prompt Forge                    */
+    /* ---------------------------------------------------------------- */
+    function buildSysPrompt(host, cb) {
+        var wrap = panelFrame('The Prompt Forge',
+            'A <b>system prompt</b> is the standing brief a model receives before every conversation. Vague wishes get vague behaviour. Specific instructions get predictable behaviour. ' +
+            'Build a prompt for Brightfix\'s support assistant that passes <b>all four</b> customer tests.', cb);
+        var selected = [];
+        var cards = h('div', { class: 'sys-cards' });
+        var previewText = h('p', { class: 'sys-text' });
+        var tokenLine = h('p', { class: 'small' });
+        var results = h('div', { class: 'puz-result', 'aria-live': 'polite' });
+
+        function refreshPreview() {
+            var text = P.sysPromptText(selected);
+            previewText.textContent = text || '(empty: the model gets no instructions at all)';
+            tokenLine.textContent = '≈ ' + P.estimateTokens(text) + ' tokens, sent and billed with every single request. Shorter is cheaper, but every rule you need has to be written down.';
+        }
+
+        P.SYS_CARDS.forEach(function (c) {
+            var b = h('button', { class: 'ghost sys-card', type: 'button', 'aria-pressed': 'false', text: c.text });
+            b.addEventListener('click', function () {
+                var i = selected.indexOf(c.id);
+                if (i >= 0) { selected.splice(i, 1); } else { selected.push(c.id); }
+                var on = selected.indexOf(c.id) >= 0;
+                b.setAttribute('aria-pressed', on ? 'true' : 'false');
+                b.className = 'ghost sys-card' + (on ? ' on' : '');
+                refreshPreview();
+            });
+            cards.appendChild(b);
+        });
+
+        function runTests() {
+            clear(results);
+            var rs = P.runSysTests(selected);
+            var good = 0;
+            rs.forEach(function (r, i) {
+                if (r.ok) { good++; }
+                var box = h('div', { class: 'q ' + (r.ok ? 'ok' : 'wrong') }, [
+                    h('p', { class: 'q-text', text: '👤 ' + r.user }),
+                    h('p', { class: 'sys-reply', text: '🤖 ' + r.reply }),
+                    h('p', { class: 'q-why', text: r.ok ? '✓ Passed.' : '✗ Failed. ' + r.lesson })
+                ]);
+                results.appendChild(box);
+            });
+            results.appendChild(h('p', { class: 'score ' + (good === rs.length ? 'good' : 'bad'), text: good + ' / ' + rs.length + ' tests passed' }));
+            if (good === rs.length) {
+                results.appendChild(h('p', { text: 'Every test passes. Notice what worked: a role, a format limit, clear boundaries and a rule for unclear requests. "Be helpful and smart" added nothing. A system prompt guides the model, but it is not a lock: a determined user can still try to talk past it.' }));
+                results.appendChild(openDoorButton(cb));
+            } else {
+                results.appendChild(h('p', { text: 'Adjust the prompt and run the tests again.' }));
+            }
+        }
+
+        wrap.appendChild(h('h3', { text: 'Pick the instructions to include' }));
+        wrap.appendChild(cards);
+        wrap.appendChild(h('h3', { text: 'The system prompt the model receives' }));
+        wrap.appendChild(h('div', { class: 'sys-preview' }, [previewText, tokenLine]));
+        wrap.appendChild(h('button', { class: 'go', type: 'button', text: 'Run the four tests', on: { click: runTests } }));
+        wrap.appendChild(results);
+        host.appendChild(wrap);
+        refreshPreview();
+    }
+
+    /* ---------------------------------------------------------------- */
+    /* Talking to Models, chamber 2: the Memory Hall                     */
+    /* ---------------------------------------------------------------- */
+    function buildContext(host, cb) {
+        var wrap = panelFrame('The Memory Hall',
+            'A model only sees what fits inside its <b>context window</b>. When a conversation gets too long, the <b>oldest</b> messages are forgotten first. ' +
+            'Sam said something important at the start. Make sure the model still knows it when Sam asks the last question. ' +
+            '<span class="small">(Sizes are in tokens. Pin = move it into the system prompt so it is never forgotten. Shrink = summarise it.)</span>', cb);
+
+        var actions = {};
+        var meter = h('div', { class: 'cache-meter', 'aria-live': 'polite' });
+        var list = h('div', { class: 'ctx-list' });
+        var answerBox = h('div', { class: 'ctx-answer', 'aria-live': 'polite' });
+        var quizBox = h('div', { class: 'tok-quiz' });
+        var quizShown = false;
+
+        function render() {
+            var w = P.assembleWindow(actions);
+            clear(list);
+            P.CONTEXT_MSGS.forEach(function (m) {
+                var a = m.last ? 'keep' : (actions[m.id] || 'keep');
+                var size = (a === 'shrink' && m.shrunk) ? m.shrunk : m.tokens;
+                var state = 'in window';
+                var cls = 'in';
+                if (m.last) { state = 'asked just now'; cls = 'in'; }
+                else if (a === 'drop') { state = 'removed'; cls = 'gone'; }
+                else if (a === 'pin') { state = 'pinned in system prompt'; cls = 'pin'; }
+                else if (w.forgotten.indexOf(m.id) >= 0) { state = 'forgotten: window full'; cls = 'lost'; }
+                var row = h('div', { class: 'ctx-row ' + cls }, [
+                    h('span', { class: 'chip ' + (m.who === 'user' ? 'chip-ok' : 'chip-bad'), text: m.who === 'user' ? 'You' : 'Model' }),
+                    h('span', { class: 'ctx-text', text: m.text }),
+                    h('span', { class: 'small', text: size + ' tokens · ' + state })
+                ]);
+                if (!m.last) {
+                    var acts = h('span', { class: 'ctx-acts' });
+                    [['keep', 'Keep'], ['shrink', 'Shrink'], ['pin', 'Pin'], ['drop', 'Drop']].forEach(function (opt) {
+                        var b = h('button', { class: 'ghost small' + (a === opt[0] ? ' on' : ''), type: 'button', 'aria-label': opt[1] + ': ' + m.text, 'aria-pressed': a === opt[0] ? 'true' : 'false', text: opt[1] });
+                        if (opt[0] === 'shrink' && !m.shrunk) { b.disabled = true; }
+                        b.addEventListener('click', function () { actions[m.id] = opt[0]; render(); });
+                        acts.appendChild(b);
+                    });
+                    row.appendChild(acts);
+                }
+                list.appendChild(row);
+            });
+
+            clear(meter);
+            var pct = Math.min(100, Math.round(w.used / w.budget * 100));
+            var fill = h('div', { class: 'w-fill ' + (w.overflow ? 'neg' : 'pos') });
+            fill.style.width = pct + '%';
+            meter.appendChild(h('div', { class: 'w-row cache-bar' }, [h('span', { class: 'w-name', text: 'Window' }), h('div', { class: 'w-track' }, [fill]), h('span', { class: 'w-val', text: w.used + '/' + w.budget })]));
+
+            clear(answerBox);
+            answerBox.appendChild(h('p', { class: 'small', text: 'Sam asks: "Can I eat the satay?"' }));
+            answerBox.appendChild(h('p', { class: 'ctx-reply ' + (w.answerSafe ? 'good' : 'bad'), text: '🤖 ' + w.answer }));
+            if (!w.answerSafe && !w.overflow) {
+                answerBox.appendChild(h('p', { class: 'q-why wrong', text: 'The peanut allergy has dropped out of the window, so the model does not know about it. That answer could hurt someone.' }));
+            }
+
+            if (w.answerSafe && !quizShown) {
+                quizShown = true;
+                quizBox.appendChild(h('h3', { text: 'Check what you learned' }));
+                buildQuiz(quizBox, cb, {
+                    options: [], items: P.CONTEXT_QUESTIONS, pass: P.CONTEXT_QUESTIONS.length,
+                    passMsg: 'The hall remembers. You know why models forget and how to keep what matters.'
+                });
+            }
+        }
+
+        wrap.appendChild(meter);
+        wrap.appendChild(list);
+        wrap.appendChild(answerBox);
+        wrap.appendChild(quizBox);
+        host.appendChild(wrap);
+        render();
+    }
+
+    /* ---------------------------------------------------------------- */
+    /* Talking to Models, chamber 3: the Token Counter                   */
+    /* ---------------------------------------------------------------- */
+    function buildTokenUnits(host, cb) {
+        var wrap = panelFrame('The Token Counter',
+            'Models do not read words or letters. They read <b>tokens</b>: chunks of text. You are billed per token, and the context window is measured in tokens too. ' +
+            '<span class="small">(These splits are illustrative: real tokenizers differ between models.)</span>', cb);
+
+        var seen = h('div', { class: 'tok-examples' });
+        P.TOKEN_EXAMPLES.forEach(function (ex) {
+            var chips = h('div', { class: 'tok-chips' });
+            ex.tokens.forEach(function (t, i) {
+                chips.appendChild(h('span', { class: 'tchip c' + (i % 4), text: t.replace(/ /g, '␣') }));
+            });
+            seen.appendChild(h('div', { class: 'tok-ex' }, [h('span', { class: 'tok-ex-text', text: '"' + ex.text + '"' }), chips, h('span', { class: 'small', text: ex.tokens.length + ' tokens' })]));
+        });
+        wrap.appendChild(seen);
+        wrap.appendChild(h('p', { class: 'small', text: 'Rule of thumb for English: about 4 characters, or three quarters of a word, per token.' }));
+
+        wrap.appendChild(h('h3', { text: 'Trim this prompt' }));
+        wrap.appendChild(h('p', { class: 'puz-intro', html: 'This prompt will be sent a million times. Cut what is <b>fluff</b>, keep what the model needs (the task, the constraint and the data). Get it to <b>' + P.TRIM_BUDGET + ' tokens or fewer</b>.' }));
+
+        var kept = P.TRIM_SENTENCES.map(function (s, i) { return i; });
+        var rowsBox = h('div', { class: 'trim-list' });
+        var meter = h('div', { class: 'puz-result', 'aria-live': 'polite' });
+        var verdict = h('div', { class: 'puz-result', 'aria-live': 'polite' });
+        var quizBox = h('div', { class: 'tok-quiz' });
+        var quizShown = false;
+
+        function refresh() {
+            var r = P.trimResult(kept);
+            clear(meter);
+            meter.appendChild(h('p', { class: 'score ' + (r.tokens <= P.TRIM_BUDGET ? 'good' : 'bad'),
+                text: '≈ ' + r.tokens + ' tokens (budget ' + P.TRIM_BUDGET + '). At $' + P.TOKEN_PRICE_PER_MILLION + ' per million tokens, a million requests costs about $' + r.millionRequestCost.toLocaleString() + '.' }));
+        }
+
+        P.TRIM_SENTENCES.forEach(function (sen, i) {
+            var b = h('button', { class: 'ghost trim-row on', type: 'button', 'aria-pressed': 'true' }, [
+                h('span', { class: 'trim-text', text: sen.text }),
+                h('span', { class: 'small', text: '≈ ' + P.estimateTokens(sen.text) + ' tokens' })
+            ]);
+            b.addEventListener('click', function () {
+                var idx = kept.indexOf(i);
+                if (idx >= 0) { kept.splice(idx, 1); } else { kept.push(i); }
+                var on = kept.indexOf(i) >= 0;
+                b.setAttribute('aria-pressed', on ? 'true' : 'false');
+                b.className = 'ghost trim-row' + (on ? ' on' : ' off');
+                refresh();
+            });
+            rowsBox.appendChild(b);
+        });
+
+        function send() {
+            var r = P.trimResult(kept);
+            clear(verdict);
+            if (r.cutEssential > 0) {
+                verdict.appendChild(h('p', { class: 'score bad', text: 'You cut something the model needs: the task, a constraint or the data. Put it back.' }));
+            } else if (r.tokens > P.TRIM_BUDGET) {
+                verdict.appendChild(h('p', { class: 'score bad', text: 'Still too long. There is more fluff to cut.' }));
+            } else {
+                verdict.appendChild(h('p', { class: 'score good', text: 'Lean and complete: ' + r.tokens + ' tokens, and the model still has everything it needs.' }));
+                if (!quizShown) {
+                    quizShown = true;
+                    quizBox.appendChild(h('h3', { text: 'Check what you learned' }));
+                    buildQuiz(quizBox, cb, {
+                        options: [], items: P.TOKEN_QUESTIONS_2, pass: P.TOKEN_QUESTIONS_2.length,
+                        passMsg: 'The counter is satisfied. You know what a token is and what it costs you.'
+                    });
+                }
+            }
+        }
+
+        wrap.appendChild(rowsBox);
+        wrap.appendChild(meter);
+        wrap.appendChild(h('button', { class: 'go', type: 'button', text: 'Send it', on: { click: send } }));
+        wrap.appendChild(verdict);
+        wrap.appendChild(quizBox);
+        host.appendChild(wrap);
+        refresh();
+    }
+
+    /* ---------------------------------------------------------------- */
     /* public API                                                        */
     /* ---------------------------------------------------------------- */
     var api = {
@@ -898,6 +1120,9 @@
             else if (kind === 'speed') { buildSpeed(host, cb); }
             else if (kind === 'cache') { buildCache(host, cb); }
             else if (kind === 'guardgate') { buildGuardGate(host, cb); }
+            else if (kind === 'sysprompt') { buildSysPrompt(host, cb); }
+            else if (kind === 'context') { buildContext(host, cb); }
+            else if (kind === 'tokenunits') { buildTokenUnits(host, cb); }
         },
         close: function (silent) {
             if (!current) { return; }

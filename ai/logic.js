@@ -186,6 +186,12 @@
         chamber(2, 'agent', 'The Agent\'s Workshop', 'Give each task only the tools it needs.', 'agent')
     ];
 
+    var TALK_ROOMS = [
+        chamber(0, 'prompt', 'The Prompt Forge', 'Write a system prompt that passes four customer tests.', 'sysprompt'),
+        chamber(1, 'memory', 'The Memory Hall', 'Keep the key fact inside the context window.', 'context'),
+        chamber(2, 'counter', 'The Token Counter', 'Trim the prompt to its token budget without cutting what matters.', 'tokenunits')
+    ];
+
     var LOCAL_ROOMS = [
         chamber(0, 'packing', 'The Packing Room', 'Fit the best model into each machine\'s memory.', 'packing'),
         chamber(1, 'datagate', 'The Data Gate', 'Decide where each job should run: local or cloud.', 'datagate'),
@@ -232,6 +238,20 @@
             rooms: MODEL_ROOMS
         },
         {
+            id: 'talk',
+            title: 'Talking to Models',
+            group: 'basics',
+            difficulty: 'easy',
+            unit: 'Chamber',
+            hud: 'basic',
+            theme: 'moss',
+            ready: true,
+            requires: ['models'],
+            blurb: 'Write a system prompt that works, see why models forget, and learn what a token really is.',
+            thumb: 'prompt',
+            rooms: TALK_ROOMS
+        },
+        {
             id: 'local',
             title: 'Local vs Cloud',
             group: 'basics',
@@ -240,7 +260,7 @@
             hud: 'basic',
             theme: 'ember',
             ready: true,
-            requires: ['models'],
+            requires: ['talk'],
             blurb: 'Private and free, or powerful and paid? Memory limits, quantization, privacy and cost.',
             thumb: 'packing',
             rooms: LOCAL_ROOMS
@@ -254,7 +274,7 @@
             hud: 'basic',
             theme: 'steel',
             ready: true,
-            requires: ['ai', 'models', 'local'], // bonus: opens once every Basics dungeon is cleared
+            requires: ['ai', 'models', 'talk', 'local'], // bonus: opens once every Basics dungeon is cleared
             blurb: 'Tokens per second, caches, and what separates a normal model from an uncensored one.',
             thumb: 'speed',
             rooms: HOOD_ROOMS
@@ -268,7 +288,7 @@
             hud: 'forge',
             theme: 'default',
             ready: true,
-            requires: ['ai', 'models', 'local'], // bonus: opens once every Basics dungeon is cleared
+            requires: ['ai', 'models', 'talk', 'local'], // bonus: opens once every Basics dungeon is cleared
             blurb: 'Tweak a companion like a modelfile. First dial: temperature. Pip joins you here.',
             thumb: 'hall',
             rooms: ROOMS
