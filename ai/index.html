@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dungeon of Weights — 7imbitz</title>
+    <meta name="description" content="A tiny pixel dungeon crawler that teaches how AI models work. Floor 1: temperature.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="game.css">
+</head>
+<body>
+    <main class="wrap">
+        <header class="bar">
+            <a class="back" href="../docs/codings.html">&larr; Codings</a>
+            <h1>Dungeon of Weights</h1>
+            <p class="floor" id="floor-label">Floor 1 &middot; The Cache Cellar</p>
+        </header>
+
+        <div class="screen-wrap">
+            <canvas id="screen" aria-label="Game screen"></canvas>
+            <div class="overlay" id="overlay" hidden>
+                <div class="card" role="dialog" aria-modal="true" aria-labelledby="ov-title">
+                    <h2 id="ov-title"></h2>
+                    <div id="ov-text"></div>
+                    <div class="card-actions">
+                        <button id="ov-btn" type="button"></button>
+                        <a id="ov-link" href="../docs/codings.html" hidden>Back to Codings</a>
+                    </div>
+                    <p class="card-hint" id="ov-hint">Press Enter</p>
+                </div>
+            </div>
+        </div>
+
+        <section class="hud" aria-label="Controls and status">
+            <div class="panel">
+                <h3>Temperature</h3>
+                <div class="dial">
+                    <button type="button" id="t-down" aria-label="Lower temperature">&minus;</button>
+                    <input type="range" id="temp" min="0" max="2" step="0.1" value="1" aria-label="Temperature">
+                    <button type="button" id="t-up" aria-label="Raise temperature">+</button>
+                </div>
+                <p class="dial-value"><span id="t-value">1.0</span> <span id="t-label"></span></p>
+                <p class="small">Keys: <kbd>Q</kbd> colder &middot; <kbd>E</kbd> hotter</p>
+            </div>
+
+            <div class="panel">
+                <h3>Pip's next move</h3>
+                <div class="bars" id="bars"></div>
+                <p class="small">Chance of each move, like next-token odds.</p>
+            </div>
+
+            <div class="panel">
+                <h3>Pip</h3>
+                <p class="hp" id="hp" aria-live="polite"></p>
+                <p class="small" id="objective"></p>
+            </div>
+        </section>
+
+        <section class="note" id="note" aria-live="polite"></section>
+
+        <div class="dpad" aria-label="Touch controls">
+            <button type="button" data-dx="0" data-dy="-1" aria-label="Up">&uarr;</button>
+            <button type="button" data-dx="-1" data-dy="0" aria-label="Left">&larr;</button>
+            <button type="button" data-dx="0" data-dy="1" aria-label="Down">&darr;</button>
+            <button type="button" data-dx="1" data-dy="0" aria-label="Right">&rarr;</button>
+        </div>
+
+        <p class="keys">Move the Hero with <kbd>WASD</kbd> or arrow keys &middot; <kbd>Q</kbd>/<kbd>E</kbd> or the slider changes Pip's temperature &middot; <kbd>R</kbd> restarts the room</p>
+    </main>
+
+    <script src="logic.js"></script>
+    <script src="game.js"></script>
+</body>
+</html>
