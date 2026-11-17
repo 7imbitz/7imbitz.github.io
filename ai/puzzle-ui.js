@@ -364,32 +364,33 @@
     }
 
     /* ---------------------------------------------------------------- */
-    /* Chamber 3: the Vault of Choices                                   */
+    /* Generic multiple-choice quiz (vault, sorting gate, data gate...)  */
+    /*   cfg: { options:[{id,label}], items:[{text, answer, why,         */
+    /*          options?}], pass, passMsg, legend?:[{label,desc}] }      */
     /* ---------------------------------------------------------------- */
-    function buildVault(host, cb) {
-        var answers = {}; // index -> 'rules' | 'learn'
-        var wrap = panelFrame('The Vault of Choices',
-            'For each job, would you write <b>rules</b> by hand, or have software <b>learn from examples</b>? Get ' + P.QUIZ_PASS + ' of ' + P.SCENARIOS.length + ' right to open the vault.', cb);
+    function buildQuiz(container, cb, cfg) {
+        var answers = {}; // index -> option id
         var list = h('div', { class: 'quiz' });
         var footer = h('div', { class: 'puz-result', 'aria-live': 'polite' });
+        var total = cfg.items.length;
 
         function answeredCount() { return Object.keys(answers).length; }
         function score() {
             var s = 0;
-            P.SCENARIOS.forEach(function (sc, i) { if (answers[i] === sc.answer) { s++; } });
+            cfg.items.forEach(function (it, i) { if (answers[i] === it.answer) { s++; } });
             return s;
         }
 
         function renderFooter() {
             clear(footer);
-            if (answeredCount() < P.SCENARIOS.length) {
-                footer.appendChild(h('p', { class: 'small', text: answeredCount() + ' / ' + P.SCENARIOS.length + ' answered' }));
+            if (answeredCount() < total) {
+                footer.appendChild(h('p', { class: 'small', text: answeredCount() + ' / ' + total + ' answered' }));
                 return;
             }
             var s = score();
-            footer.appendChild(h('p', { class: 'score ' + (s >= P.QUIZ_PASS ? 'good' : 'bad'), text: s + ' / ' + P.SCENARIOS.length + ' correct' }));
-            if (s >= P.QUIZ_PASS) {
-                footer.appendChild(h('p', { text: 'The vault opens. You can tell when a job calls for rules and when it calls for learning.' }));
+            footer.appendChild(h('p', { class: 'score ' + (s >= cfg.pass ? 'good' : 'bad'), text: s + ' / ' + total + ' correct' }));
+            if (s >= cfg.pass) {
+                footer.appendChild(h('p', { text: cfg.passMsg }));
                 footer.appendChild(openDoorButton(cb));
             } else {
                 footer.appendChild(h('p', { text: 'Not quite. Read the explanations, then try again.' }));
@@ -399,30 +400,319 @@
 
         function renderQuiz() {
             clear(list);
-            P.SCENARIOS.forEach(function (sc, i) {
+            cfg.items.forEach(function (it, i) {
                 var done = answers[i] !== undefined;
-                var right = answers[i] === sc.answer;
-                var card = h('div', { class: 'q ' + (done ? (right ? 'ok' : 'wrong') : '') }, [h('p', { class: 'q-text', text: (i + 1) + '. ' + sc.text })]);
+                var right = answers[i] === it.answer;
+                var card = h('div', { class: 'q ' + (done ? (right ? 'ok' : 'wrong') : '') }, [h('p', { class: 'q-text', text: (i + 1) + '. ' + it.text })]);
                 var btns = h('div', { class: 'q-btns' });
-                [['rules', 'Write rules'], ['learn', 'Learn from examples']].forEach(function (opt) {
-                    var b = h('button', { class: 'ghost', type: 'button', text: opt[1] });
+                (it.options || cfg.options).forEach(function (opt) {
+                    var b = h('button', { class: 'ghost', type: 'button', text: opt.label });
                     b.disabled = done;
-                    b.addEventListener('click', function () { answers[i] = opt[0]; renderQuiz(); });
+                    b.addEventListener('click', function () { answers[i] = opt.id; renderQuiz(); });
                     btns.appendChild(b);
                 });
                 card.appendChild(btns);
                 if (done) {
-                    card.appendChild(h('p', { class: 'q-why', text: (right ? '✓ Correct. ' : '✗ Not quite. ') + sc.why }));
+                    card.appendChild(h('p', { class: 'q-why', text: (right ? '✓ Correct. ' : '✗ Not quite. ') + it.why }));
                 }
                 list.appendChild(card);
             });
             renderFooter();
         }
 
-        wrap.appendChild(list);
-        wrap.appendChild(footer);
-        host.appendChild(wrap);
+        if (cfg.legend) {
+            var legend = h('ul', { class: 'legend' });
+            cfg.legend.forEach(function (l) {
+                legend.appendChild(h('li', {}, [h('b', { text: l.label }), ' ' + l.desc]));
+            });
+            container.appendChild(legend);
+        }
+        container.appendChild(list);
+        container.appendChild(footer);
         renderQuiz();
+    }
+
+    function quizPanel(host, cb, title, intro, cfg) {
+        var wrap = panelFrame(title, intro, cb);
+        buildQuiz(wrap, cb, cfg);
+        host.appendChild(wrap);
+    }
+
+    /* Chamber 3 of "What Is AI?": the Vault of Choices */
+    function buildVault(host, cb) {
+        quizPanel(host, cb, 'The Vault of Choices',
+            'For each job, would you write <b>rules</b> by hand, or have software <b>learn from examples</b>? Get ' + P.QUIZ_PASS + ' of ' + P.SCENARIOS.length + ' right to open the vault.',
+            {
+                options: [{ id: 'rules', label: 'Write rules' }, { id: 'learn', label: 'Learn from examples' }],
+                items: P.SCENARIOS, pass: P.QUIZ_PASS,
+                passMsg: 'The vault opens. You can tell when a job calls for rules and when it calls for learning.'
+            });
+    }
+
+    /* ---------------------------------------------------------------- */
+    /* Kinds of Models, chamber 1: the Sorting Gate                      */
+    /* ---------------------------------------------------------------- */
+    function buildSorting(host, cb) {
+        quizPanel(host, cb, 'The Sorting Gate',
+            'Different jobs call for different <b>kinds</b> of model. Match each job to the right kind. Get 7 of ' + P.SORTING_JOBS.length + ' right.',
+            {
+                options: P.KINDS.map(function (k) { return { id: k.id, label: k.label }; }),
+                legend: P.KINDS.map(function (k) { return { label: k.label + ':', desc: k.desc }; }),
+                items: P.SORTING_JOBS, pass: 7,
+                passMsg: 'The gate swings open. You can tell what kind of model a job needs.'
+            });
+    }
+
+    /* ---------------------------------------------------------------- */
+    /* Kinds of Models, chamber 2: the Token Mill                        */
+    /* ---------------------------------------------------------------- */
+    function buildTokens(host, cb) {
+        var wrap = panelFrame('The Token Mill',
+            'A language model writes <b>one token at a time</b>. At every step it has a probability for each possible next token. <b>You are the model</b>: pick the next token for each prompt. ' +
+            '<span class="small">(The odds here are made up for the game.)</span>', cb);
+        var stage = h('div', { class: 'tok-stage' });
+        var quizBox = h('div', { class: 'tok-quiz' });
+        var state = { prompt: 0, step: 0, text: P.TOKEN_PROMPTS[0].start, notes: [] };
+
+        function renderStage() {
+            clear(stage);
+            var pr = P.TOKEN_PROMPTS[state.prompt];
+            stage.appendChild(h('p', { class: 'small', text: 'Prompt ' + (state.prompt + 1) + ' of ' + P.TOKEN_PROMPTS.length }));
+            stage.appendChild(h('p', { class: 'tok-text' }, [state.text, h('span', { class: 'tok-cursor', text: '▌' })]));
+            var options = pr.steps[state.step];
+            var maxP = options.reduce(function (m, o) { return Math.max(m, o.p); }, 0);
+            var opts = h('div', { class: 'tok-opts' });
+            options.forEach(function (o) {
+                var fill = h('div', { class: 'tok-fill' });
+                fill.style.width = Math.round(o.p / maxP * 100) + '%';
+                var b = h('button', { class: 'tok', type: 'button', 'aria-label': 'Pick ' + o.t.trim() + ' at ' + o.p + ' percent' }, [
+                    h('span', { class: 'tok-label', text: o.t.replace(/^ /, '␣') }),
+                    h('div', { class: 'tok-track' }, [fill]),
+                    h('span', { class: 'tok-pct', text: o.p + '%' })
+                ]);
+                b.addEventListener('click', function () { pick(o); });
+                opts.appendChild(b);
+            });
+            stage.appendChild(opts);
+            stage.appendChild(h('p', { class: 'small', text: 'Click a token to add it. The bars show the model\'s odds.' }));
+        }
+
+        function pick(o) {
+            var pr = P.TOKEN_PROMPTS[state.prompt];
+            state.text += o.t;
+            state.step++;
+            if (state.step >= pr.steps.length) {
+                // prompt finished
+                clear(stage);
+                stage.appendChild(h('p', { class: 'tok-text done' }, [state.text]));
+                stage.appendChild(h('p', { class: 'compare', text: pr.note }));
+                state.notes.push(pr.note);
+                if (state.prompt + 1 < P.TOKEN_PROMPTS.length) {
+                    stage.appendChild(h('button', { class: 'go', type: 'button', text: 'Next prompt', on: { click: function () {
+                        state.prompt++; state.step = 0; state.text = P.TOKEN_PROMPTS[state.prompt].start; renderStage();
+                    } } }));
+                } else {
+                    stage.appendChild(h('h3', { text: 'Check what you learned' }));
+                    buildQuiz(quizBox, cb, {
+                        options: [], items: P.TOKEN_QUESTIONS, pass: P.TOKEN_QUESTIONS.length,
+                        passMsg: 'The mill grinds to a halt. You know what a language model really does.'
+                    });
+                }
+            } else {
+                renderStage();
+            }
+        }
+
+        wrap.appendChild(stage);
+        wrap.appendChild(quizBox);
+        host.appendChild(wrap);
+        renderStage();
+    }
+
+    /* ---------------------------------------------------------------- */
+    /* Kinds of Models, chamber 3: the Agent's Workshop                  */
+    /* ---------------------------------------------------------------- */
+    function buildAgent(host, cb) {
+        var wrap = panelFrame('The Agent\'s Workshop',
+            'A model on its own can only produce text. An <b>agent</b> is a model plus <b>tools</b>, run in a loop. For each task, hand over <b>only the tools it needs</b>. ' +
+            'Extra tools cost money and give attackers more to abuse.', cb);
+        var chosen = P.AGENT_TASKS.map(function () { return []; });
+        var results = h('div', { class: 'puz-result', 'aria-live': 'polite' });
+        var board = h('div', { class: 'agent-board' });
+
+        P.AGENT_TASKS.forEach(function (task, i) {
+            var box = h('div', { class: 'q' }, [h('p', { class: 'q-text', text: (i + 1) + '. ' + task.text })]);
+            var tools = h('div', { class: 'tool-row' });
+            P.TOOLS.forEach(function (tool) {
+                var b = h('button', { class: 'ghost tool', type: 'button', 'aria-pressed': 'false', text: tool.label });
+                b.addEventListener('click', function () {
+                    var idx = chosen[i].indexOf(tool.id);
+                    if (idx >= 0) { chosen[i].splice(idx, 1); } else { chosen[i].push(tool.id); }
+                    var on = chosen[i].indexOf(tool.id) >= 0;
+                    b.setAttribute('aria-pressed', on ? 'true' : 'false');
+                    b.className = 'ghost tool' + (on ? ' on' : '');
+                });
+                tools.appendChild(b);
+            });
+            box.appendChild(tools);
+            board.appendChild(box);
+        });
+
+        function runAll() {
+            clear(results);
+            var good = 0;
+            P.AGENT_TASKS.forEach(function (task, i) {
+                var r = P.evaluateTools(task, chosen[i]);
+                if (r.ok) { good++; }
+                var labelOf = function (id) { return P.TOOLS.filter(function (t) { return t.id === id; })[0].label; };
+                var msg = r.ok ? '✓ ' + (i + 1) + '. ' + task.why
+                    : '✗ ' + (i + 1) + '. ' + (r.missing.length ? 'Missing: ' + r.missing.map(labelOf).join(', ') + '. ' : '') +
+                        (r.extra.length ? 'Not needed: ' + r.extra.map(labelOf).join(', ') + '. ' : '') + task.why;
+                results.appendChild(h('p', { class: 'q-why ' + (r.ok ? 'ok' : 'wrong'), text: msg }));
+            });
+            results.appendChild(h('p', { class: 'score ' + (good === P.AGENT_TASKS.length ? 'good' : 'bad'), text: good + ' / ' + P.AGENT_TASKS.length + ' tasks equipped correctly' }));
+            if (good === P.AGENT_TASKS.length) {
+                results.appendChild(h('p', { text: 'The workshop approves. A good harness gives a model exactly the tools the job needs.' }));
+                results.appendChild(openDoorButton(cb));
+            } else {
+                results.appendChild(h('p', { text: 'Adjust the tools and run it again.' }));
+            }
+        }
+
+        wrap.appendChild(board);
+        wrap.appendChild(h('button', { class: 'go', type: 'button', text: 'Run the agents', on: { click: runAll } }));
+        wrap.appendChild(results);
+        host.appendChild(wrap);
+    }
+
+    /* ---------------------------------------------------------------- */
+    /* Local vs Cloud, chamber 1: the Packing Room                       */
+    /* ---------------------------------------------------------------- */
+    function buildPacking(host, cb) {
+        var wrap = panelFrame('The Packing Room',
+            'A local model has to fit in your machine\'s memory. Three machines, three choices: pick the <b>best model that fits</b>. ' +
+            '<b>Quantization</b> shrinks a model by storing its numbers with less precision, at a small cost in quality. <span class="small">(Sizes and quality scores are rough illustrations.)</span>', cb);
+        var round = 0;
+        var stage = h('div', { class: 'pack-stage' });
+        var feedback = h('div', { class: 'puz-result', 'aria-live': 'polite' });
+
+        function renderRound() {
+            clear(stage);
+            clear(feedback);
+            var r = P.PACK_ROUNDS[round];
+            stage.appendChild(h('h3', { text: 'Round ' + (round + 1) + ' of ' + P.PACK_ROUNDS.length + ': ' + r.machine }));
+            var grid = h('div', { class: 'pack-grid' });
+            P.PACK_OPTIONS.forEach(function (o) {
+                var fits = o.gb <= r.budget;
+                var fill = h('div', { class: 'tok-fill' });
+                fill.style.width = Math.round(o.quality / 10 * 100) + '%';
+                var b = h('button', { class: 'pack' + (fits ? '' : ' nofit'), type: 'button', 'aria-label': o.label + ', ' + o.gb + ' gigabytes' }, [
+                    h('span', { class: 'pack-name', text: o.label }),
+                    h('span', { class: 'pack-gb', text: o.gb + ' GB' + (fits ? '' : ' (too big)') }),
+                    h('div', { class: 'tok-track' }, [fill]),
+                    h('span', { class: 'small', text: 'quality ' + o.quality })
+                ]);
+                b.addEventListener('click', function () { choose(o); });
+                grid.appendChild(b);
+            });
+            stage.appendChild(grid);
+        }
+
+        function choose(o) {
+            var r = P.PACK_ROUNDS[round];
+            var best = P.bestPack(r.budget);
+            clear(feedback);
+            if (o.gb > r.budget) {
+                feedback.appendChild(h('p', { class: 'score bad', text: 'That needs ' + o.gb + ' GB and this machine has ' + r.budget + ' GB. It will not load.' }));
+                return;
+            }
+            if (o.id !== best.id) {
+                feedback.appendChild(h('p', { class: 'score bad', text: 'It fits, but there is a better one. Something with a higher quality score still fits in ' + r.budget + ' GB.' }));
+                return;
+            }
+            feedback.appendChild(h('p', { class: 'score good', text: '✓ ' + best.label + ' is the best fit.' }));
+            if (round + 1 < P.PACK_ROUNDS.length) {
+                feedback.appendChild(h('button', { class: 'go', type: 'button', text: 'Next machine', on: { click: function () { round++; renderRound(); } } }));
+            } else {
+                feedback.appendChild(h('p', { text: 'Notice the pattern: a bigger model squeezed with quantization usually beats a smaller model at full precision. Memory, not just model quality, decides what you can run locally.' }));
+                feedback.appendChild(openDoorButton(cb));
+            }
+        }
+
+        wrap.appendChild(stage);
+        wrap.appendChild(feedback);
+        host.appendChild(wrap);
+        renderRound();
+    }
+
+    /* ---------------------------------------------------------------- */
+    /* Local vs Cloud, chamber 2: the Data Gate                          */
+    /* ---------------------------------------------------------------- */
+    function buildDataGate(host, cb) {
+        quizPanel(host, cb, 'The Data Gate',
+            'Where should each job run: on <b>your own machine</b> (local) or on a <b>provider\'s servers</b> (cloud)? Think about privacy, connectivity, power and cost. Get 5 of ' + P.DATA_GATE.length + ' right.',
+            {
+                options: [{ id: 'local', label: 'Run it local' }, { id: 'cloud', label: 'Use the cloud' }],
+                items: P.DATA_GATE, pass: 5,
+                passMsg: 'The gate opens. You can weigh privacy, power and cost when choosing where a model runs.'
+            });
+    }
+
+    /* ---------------------------------------------------------------- */
+    /* Local vs Cloud, chamber 3: the Toll Booth                         */
+    /* ---------------------------------------------------------------- */
+    function buildToll(host, cb) {
+        var T = P.TOLL;
+        var wrap = panelFrame('The Toll Booth',
+            'The cloud charges <b>per use</b>. Running locally is a <b>fixed monthly cost</b> (hardware spread over time, plus power). Slide the workload and watch which is cheaper. ' +
+            '<span class="small">(Illustrative prices: about $' + (T.cloudPerRequest * 1000).toFixed(0) + ' per 1,000 requests in the cloud, $' + T.localMonthly + ' a month local.)</span>', cb);
+
+        var slider = h('input', { type: 'range', min: '0', max: String(T.sliderMax), step: String(T.sliderStep), 'aria-label': 'Requests per day' });
+        slider.value = '300';
+        var perDay = h('p', { class: 'toll-n' });
+        var cloudFill = h('div', { class: 'w-fill neg' });
+        var localFill = h('div', { class: 'w-fill pos' });
+        var cloudVal = h('span', { class: 'w-val' });
+        var localVal = h('span', { class: 'w-val' });
+        var verdict = h('p', { class: 'score' });
+
+        function bar(name, fill, val) {
+            return h('div', { class: 'w-row toll-row' }, [h('span', { class: 'w-name', text: name }), h('div', { class: 'w-track' }, [fill]), val]);
+        }
+
+        function refresh() {
+            var n = parseInt(slider.value, 10);
+            var c = P.tollCosts(n);
+            var max = Math.max(c.cloud, c.local, 1);
+            perDay.textContent = n.toLocaleString() + ' requests a day';
+            cloudFill.style.width = Math.round(c.cloud / max * 100) + '%';
+            localFill.style.width = Math.round(c.local / max * 100) + '%';
+            cloudVal.textContent = '$' + c.cloud.toFixed(0);
+            localVal.textContent = '$' + c.local.toFixed(0);
+            verdict.className = 'score ' + (c.cheaper === 'local' ? 'good' : 'bad');
+            verdict.textContent = c.cheaper === 'same' ? 'Dead even.' : (c.cheaper === 'cloud' ? 'The cloud is cheaper at this volume.' : 'Local is cheaper at this volume.');
+        }
+        slider.addEventListener('input', refresh);
+
+        var explorer = h('div', { class: 'toll' }, [
+            perDay, slider,
+            bar('Cloud', cloudFill, cloudVal),
+            bar('Local', localFill, localVal),
+            verdict,
+            h('p', { class: 'small', text: 'Local also costs setup time and keeps your hardware busy. Cloud brings rate limits and sends your data off your machine.' })
+        ]);
+        var quizBox = h('div', { class: 'tok-quiz' });
+
+        wrap.appendChild(explorer);
+        wrap.appendChild(h('h3', { text: 'Now decide' }));
+        wrap.appendChild(quizBox);
+        host.appendChild(wrap);
+        refresh();
+        buildQuiz(quizBox, cb, {
+            options: [{ id: 'local', label: 'Local' }, { id: 'cloud', label: 'Cloud' }],
+            items: P.TOLL_QUESTIONS, pass: P.TOLL_QUESTIONS.length,
+            passMsg: 'The toll booth raises its barrier. You can find where fixed cost beats pay-per-use.'
+        });
     }
 
     /* ---------------------------------------------------------------- */
@@ -438,6 +728,12 @@
             if (kind === 'rules') { buildRules(host, cb); }
             else if (kind === 'learn') { buildLearn(host, cb); }
             else if (kind === 'vault') { buildVault(host, cb); }
+            else if (kind === 'sorting') { buildSorting(host, cb); }
+            else if (kind === 'tokens') { buildTokens(host, cb); }
+            else if (kind === 'agent') { buildAgent(host, cb); }
+            else if (kind === 'packing') { buildPacking(host, cb); }
+            else if (kind === 'datagate') { buildDataGate(host, cb); }
+            else if (kind === 'toll') { buildToll(host, cb); }
         },
         close: function (silent) {
             if (!current) { return; }

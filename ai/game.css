@@ -427,6 +427,71 @@ button.cr.picked:hover { background: #352b66; }
 .q-btns { display: flex; gap: 0.5em; flex-wrap: wrap; }
 .q-why { margin: 0.5em 0 0; font-size: 0.85em; color: var(--muted); }
 
+.q-why.ok { color: var(--green); }
+.q-why.wrong { color: var(--red); }
+
+.legend { list-style: none; margin: 0 0 0.8em; padding: 0.5em 0.8em; background: #120d22; border-left: 4px solid var(--cyan); font-size: 0.85em; display: grid; gap: 0.2em; }
+.legend b { color: var(--cyan); }
+
+/* Token Mill */
+.tok-stage { margin: 0.4em 0 0.8em; }
+.tok-text { font-size: 1.15em; background: #120d22; border: 2px solid var(--panel-border); border-radius: 6px; padding: 0.7em 0.9em; margin: 0.5em 0; word-break: break-word; }
+.tok-text.done { border-color: var(--accent); }
+.tok-cursor { color: var(--accent); animation: blink 1s steps(2, start) infinite; }
+@keyframes blink { to { visibility: hidden; } }
+.tok-opts { display: grid; gap: 0.4em; }
+button.tok {
+    display: grid;
+    grid-template-columns: 6em 1fr 3em;
+    align-items: center;
+    gap: 0.6em;
+    text-align: left;
+    background: #120d22;
+    color: var(--text);
+    border: 2px solid var(--panel-border);
+    border-bottom-width: 2px;
+    border-radius: 6px;
+    padding: 0.35em 0.6em;
+    font: inherit;
+}
+button.tok:hover { border-color: var(--accent); background: #2a2250; }
+.tok-label { font-weight: bold; color: var(--accent); }
+.tok-track { height: 0.8em; background: #0f0b1a; border: 1px solid var(--panel-border); }
+.tok-fill { height: 100%; width: 0; background: var(--cyan); }
+.tok-pct { text-align: right; color: var(--muted); }
+.tok-quiz { margin-top: 0.6em; }
+
+/* Agent's Workshop */
+.agent-board { display: grid; gap: 0.6em; margin-bottom: 0.4em; }
+.tool-row { display: flex; flex-wrap: wrap; gap: 0.4em; }
+button.tool.on { background: var(--cyan); color: #14101f; border-color: var(--cyan); }
+button.tool.on:hover:not(:disabled) { background: #79dcf6; }
+
+/* Packing Room */
+.pack-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 0.5em; }
+button.pack {
+    display: grid;
+    gap: 0.2em;
+    text-align: left;
+    background: #120d22;
+    color: var(--text);
+    border: 2px solid var(--panel-border);
+    border-bottom-width: 2px;
+    border-radius: 6px;
+    padding: 0.5em 0.6em;
+    font: inherit;
+}
+button.pack:hover { border-color: var(--accent); background: #2a2250; }
+button.pack.nofit { opacity: 0.55; }
+.pack-name { font-weight: bold; }
+.pack-gb { color: var(--accent); font-size: 0.9em; }
+
+/* Toll Booth */
+.toll { background: #120d22; border: 2px solid var(--panel-border); border-radius: 6px; padding: 0.7em 0.9em; }
+.toll-n { margin: 0 0 0.3em; font-size: 1.1em; color: var(--accent); }
+.toll input[type="range"] { width: 100%; accent-color: var(--accent); }
+.toll-row { grid-template-columns: 3.5em 1fr 3.5em; margin: 0.3em 0; }
+
 /* HUD variant for dungeons without Pip */
 .hud.solo { grid-template-columns: 1fr; }
 [hidden] { display: none !important; }

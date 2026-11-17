@@ -174,9 +174,27 @@
         }
     ];
 
+    // The three chamber layouts are shared by every puzzle dungeon.
+    var CHAMBER_MAPS = [AI_ROOMS[0].map, AI_ROOMS[1].map, AI_ROOMS[2].map];
+    function chamber(i, id, title, objective, puzzle) {
+        return { id: id, title: title, objective: objective, noPip: true, puzzle: puzzle, map: CHAMBER_MAPS[i] };
+    }
+
+    var MODEL_ROOMS = [
+        chamber(0, 'sorting', 'The Sorting Gate', 'Match each job to the right kind of model.', 'sorting'),
+        chamber(1, 'tokens', 'The Token Mill', 'Play the language model: pick the next token.', 'tokens'),
+        chamber(2, 'agent', 'The Agent\'s Workshop', 'Give each task only the tools it needs.', 'agent')
+    ];
+
+    var LOCAL_ROOMS = [
+        chamber(0, 'packing', 'The Packing Room', 'Fit the best model into each machine\'s memory.', 'packing'),
+        chamber(1, 'datagate', 'The Data Gate', 'Decide where each job should run: local or cloud.', 'datagate'),
+        chamber(2, 'toll', 'The Toll Booth', 'Find where local becomes cheaper than the cloud.', 'toll')
+    ];
+
     /*
      * Dungeons: each one teaches a different idea, unlocked in order.
-     * `ready: false` dungeons show as "coming soon" on the hub.
+     * `requires` lists the dungeons that must be cleared first.
      */
     var DUNGEONS = [
         {
@@ -186,8 +204,9 @@
             difficulty: 'easy',
             unit: 'Chamber',
             hud: 'basic',
+            theme: 'default',
             ready: true,
-            unlockAfter: null,
+            requires: [],
             blurb: 'Rules or examples? Meet two golems and find out what makes software "intelligent".',
             thumb: 'rules',
             rooms: AI_ROOMS
@@ -197,18 +216,28 @@
             title: 'Kinds of Models',
             group: 'basics',
             difficulty: 'easy',
-            ready: false,
-            unlockAfter: 'ai',
-            blurb: 'Classifiers, chatbots and agents. Hire the right AI for each job.'
+            unit: 'Chamber',
+            hud: 'basic',
+            theme: 'teal',
+            ready: true,
+            requires: ['ai'],
+            blurb: 'Classifiers, generators and agents. How language models really produce text, and what tools add.',
+            thumb: 'sorting',
+            rooms: MODEL_ROOMS
         },
         {
             id: 'local',
             title: 'Local vs Cloud',
             group: 'basics',
             difficulty: 'medium',
-            ready: false,
-            unlockAfter: 'models',
-            blurb: 'Private and free, or powerful and paid? Pack your companion wisely.'
+            unit: 'Chamber',
+            hud: 'basic',
+            theme: 'ember',
+            ready: true,
+            requires: ['models'],
+            blurb: 'Private and free, or powerful and paid? Memory limits, quantization, privacy and cost.',
+            thumb: 'packing',
+            rooms: LOCAL_ROOMS
         },
         {
             id: 'forge',
@@ -217,8 +246,9 @@
             difficulty: 'bonus',
             unit: 'Room',
             hud: 'forge',
+            theme: 'default',
             ready: true,
-            unlockAfter: 'ai',
+            requires: ['ai', 'models', 'local'], // opens only when every Basics dungeon is cleared
             blurb: 'Tweak a companion like a modelfile. First dial: temperature. Pip joins you here.',
             thumb: 'hall',
             rooms: ROOMS

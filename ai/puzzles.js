@@ -196,7 +196,154 @@
         { text: 'Suggest the next song someone will enjoy.', answer: 'learn', why: 'Taste is fuzzy and personal. Patterns in what people actually listened to beat hand-written rules.' }
     ];
 
+    /* ================================================================ */
+    /* Dungeon 2: Kinds of Models                                        */
+    /* ================================================================ */
+    var KINDS = [
+        { id: 'classifier', label: 'Classifier', desc: 'puts things into labelled boxes' },
+        { id: 'predictor', label: 'Predictor', desc: 'forecasts a number' },
+        { id: 'generator', label: 'Generator', desc: 'creates new text, images or audio' },
+        { id: 'recommender', label: 'Recommender', desc: 'suggests what you will like next' },
+        { id: 'agent', label: 'Agent', desc: 'uses tools to act toward a goal' }
+    ];
+
+    var SORTING_JOBS = [
+        { text: 'Decide whether a photo shows a dog or a cat.', answer: 'classifier', why: 'It picks one label from a fixed set of boxes.' },
+        { text: 'Forecast next month\'s electricity use.', answer: 'predictor', why: 'The output is a number, not a label and not new content.' },
+        { text: 'Write a friendly product description.', answer: 'generator', why: 'It creates new text that did not exist before. Large language models are generators.' },
+        { text: 'Suggest the next show someone will enjoy.', answer: 'recommender', why: 'It ranks items by what this particular person is likely to enjoy.' },
+        { text: 'Research a topic on the web, then email a summary.', answer: 'agent', why: 'It has to choose and use tools (search, email) over several steps toward a goal.' },
+        { text: 'Flag a bank transfer as fraud or not fraud.', answer: 'classifier', why: 'Two labels: fraud or not fraud.' },
+        { text: 'Paint a logo from the words "a cat in a space helmet".', answer: 'generator', why: 'It creates a brand-new image from a text description.' },
+        { text: 'Estimate a house price from its size and location.', answer: 'predictor', why: 'It estimates a number from inputs. This is often called regression.' }
+    ];
+
+    // Token Mill: "you are the language model". Odds are made up for the game.
+    var TOKEN_PROMPTS = [
+        {
+            start: 'The capital of France is',
+            steps: [
+                [{ t: ' Paris', p: 90 }, { t: ' a', p: 4 }, { t: ' the', p: 3 }, { t: ' Lyon', p: 2 }, { t: ' Berlin', p: 1 }],
+                [{ t: '.', p: 84 }, { t: ',', p: 9 }, { t: ' and', p: 5 }, { t: ' known', p: 2 }]
+            ],
+            note: 'A famous fact, so one token dominates. The model is confident, and here it happens to be right.'
+        },
+        {
+            start: 'The capital of Australia is',
+            steps: [
+                [{ t: ' Sydney', p: 46, wrong: true }, { t: ' Canberra', p: 41 }, { t: ' Melbourne', p: 9 }, { t: ' a', p: 4 }],
+                [{ t: '.', p: 80 }, { t: ',', p: 12 }, { t: ' and', p: 6 }, { t: ' where', p: 2 }]
+            ],
+            note: 'The most likely token is not the true one. The model fluently continues with what sounds right. Real models are better at famous facts, but they fail the same way on rarer ones.'
+        }
+    ];
+
+    var TOKEN_QUESTIONS = [
+        {
+            text: 'What does a language model produce, one piece at a time?',
+            options: [{ id: 'a', label: 'Facts it looked up' }, { id: 'b', label: 'Tokens chosen by probability' }, { id: 'c', label: 'Whole answers it stored' }],
+            answer: 'b',
+            why: 'It builds text one token at a time, picking each from a probability distribution over what could come next.'
+        },
+        {
+            text: 'Why can a model state something false and sound completely sure?',
+            options: [{ id: 'a', label: 'Likely text is not the same as true text' }, { id: 'b', label: 'It lies on purpose' }, { id: 'c', label: 'Its database is only out of date' }],
+            answer: 'a',
+            why: 'It was trained to produce likely text, not verified facts. That is the root of hallucination. Check important claims, or give the model a source.'
+        }
+    ];
+
+    // Agent's Workshop: give each task only the tools it needs.
+    var TOOLS = [
+        { id: 'search', label: 'Web search' },
+        { id: 'calc', label: 'Calculator' },
+        { id: 'files', label: 'File reader' },
+        { id: 'email', label: 'Email sender' }
+    ];
+    var AGENT_TASKS = [
+        { text: 'What was a stock\'s closing price yesterday?', needs: ['search'], why: 'A model\'s knowledge stops at its training date. Fresh facts need a search tool.' },
+        { text: 'Multiply 48,213 by 7,919 exactly.', needs: ['calc'], why: 'Models predict likely digits. They do not calculate. A calculator is exact.' },
+        { text: 'Summarise the attached five-page report.', needs: ['files'], why: 'It must be able to open the file, and nothing more.' },
+        { text: 'Write a haiku about autumn.', needs: [], why: 'Pure text generation. Every extra tool adds cost and attack surface, because a tool can be abused through prompt injection.' }
+    ];
+
+    function evaluateTools(task, chosen) {
+        var missing = task.needs.filter(function (t) { return chosen.indexOf(t) < 0; });
+        var extra = chosen.filter(function (t) { return task.needs.indexOf(t) < 0; });
+        return { ok: missing.length === 0 && extra.length === 0, missing: missing, extra: extra };
+    }
+
+    /* ================================================================ */
+    /* Dungeon 3: Local vs Cloud                                         */
+    /* ================================================================ */
+    // Rough, illustrative numbers: "quality" is a made-up 0-10 score.
+    var PACK_OPTIONS = [
+        { id: '3b-q4', label: '3B model, quantized (Q4)', gb: 2, quality: 3.5 },
+        { id: '3b-fp16', label: '3B model, full precision', gb: 6, quality: 4 },
+        { id: '7b-q4', label: '7B model, quantized (Q4)', gb: 4, quality: 6 },
+        { id: '7b-fp16', label: '7B model, full precision', gb: 14, quality: 7 },
+        { id: '13b-q4', label: '13B model, quantized (Q4)', gb: 8, quality: 8 },
+        { id: '13b-fp16', label: '13B model, full precision', gb: 26, quality: 8.5 },
+        { id: '70b-q4', label: '70B model, quantized (Q4)', gb: 40, quality: 9.5 }
+    ];
+    var PACK_ROUNDS = [
+        { budget: 4, machine: 'a small laptop GPU with 4 GB of memory' },
+        { budget: 8, machine: 'a gaming GPU with 8 GB of memory' },
+        { budget: 48, machine: 'a workstation with 48 GB of memory' }
+    ];
+
+    function bestPack(budget) {
+        var best = null;
+        PACK_OPTIONS.forEach(function (o) {
+            if (o.gb <= budget && (!best || o.quality > best.quality)) { best = o; }
+        });
+        return best;
+    }
+
+    var DATA_GATE = [
+        { text: 'Analyse a client\'s confidential source code under NDA.', answer: 'local', why: 'The code never leaves your machine. Sending it to a third party may break the NDA.' },
+        { text: 'Draft an outline for a public blog post.', answer: 'cloud', why: 'Nothing sensitive, and a strong cloud model needs no hardware from you.' },
+        { text: 'Summarise patient health records.', answer: 'local', why: 'Health data is heavily regulated. Keeping it on your own systems is far easier to defend.' },
+        { text: 'Get help with a document on a flight with no internet.', answer: 'local', why: 'A local model works fully offline. A cloud model needs a connection.' },
+        { text: 'Tackle a hard multi-step research problem that needs the strongest model available.', answer: 'cloud', why: 'The largest frontier models are far bigger than any hardware you own.' },
+        { text: 'Quietly process 10 million short log lines a day, cheaply.', answer: 'local', why: 'At very high volume a fixed local cost beats paying per token. The next room shows why.' }
+    ];
+
+    // Toll Booth: illustrative prices. Cloud is pay-per-use, local is a fixed monthly cost.
+    var TOLL = {
+        cloudPerRequest: 0.002,   // about 2,000 tokens at $1 per million
+        localMonthly: 40,         // hardware (spread over time) plus power
+        daysPerMonth: 30,
+        sliderMax: 3000,
+        sliderStep: 50
+    };
+    function tollCosts(requestsPerDay) {
+        var cloud = requestsPerDay * TOLL.daysPerMonth * TOLL.cloudPerRequest;
+        var local = TOLL.localMonthly;
+        return { cloud: cloud, local: local, cheaper: cloud < local ? 'cloud' : (cloud > local ? 'local' : 'same') };
+    }
+    function breakEvenPerDay() { return TOLL.localMonthly / (TOLL.daysPerMonth * TOLL.cloudPerRequest); }
+    var TOLL_QUESTIONS = [
+        { text: 'At 100 requests a day, which is cheaper per month?', answer: 'cloud', why: 'About $6 on the cloud against a fixed $40 for local. At low volume, paying per use wins.' },
+        { text: 'At 2,000 requests a day, which is cheaper per month?', answer: 'local', why: 'About $120 on the cloud against the same fixed $40 locally. At high volume, the fixed cost wins.' }
+    ];
+
     var api = {
+        KINDS: KINDS,
+        SORTING_JOBS: SORTING_JOBS,
+        TOKEN_PROMPTS: TOKEN_PROMPTS,
+        TOKEN_QUESTIONS: TOKEN_QUESTIONS,
+        TOOLS: TOOLS,
+        AGENT_TASKS: AGENT_TASKS,
+        evaluateTools: evaluateTools,
+        PACK_OPTIONS: PACK_OPTIONS,
+        PACK_ROUNDS: PACK_ROUNDS,
+        bestPack: bestPack,
+        DATA_GATE: DATA_GATE,
+        TOLL: TOLL,
+        tollCosts: tollCosts,
+        breakEvenPerDay: breakEvenPerDay,
+        TOLL_QUESTIONS: TOLL_QUESTIONS,
         MARKS: MARKS,
         N: N,
         ALL: ALL,

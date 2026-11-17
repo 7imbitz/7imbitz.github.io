@@ -111,7 +111,11 @@
     var sprite = {};
     Object.keys(SPRITES).forEach(function (k) { sprite[k] = makeSprite(SPRITES[k]); });
     // one golem per puzzle, told apart by the colour of its rune
-    var GOLEM_RUNE = { rules: '#4cc9f0', learn: '#06d6a0', vault: '#ffd166' };
+    var GOLEM_RUNE = {
+        rules: '#4cc9f0', learn: '#06d6a0', vault: '#ffd166',
+        sorting: '#b18cff', tokens: '#ff9f43', agent: '#ff6b9d',
+        packing: '#4cc9f0', datagate: '#06d6a0', toll: '#ffd166'
+    };
     Object.keys(GOLEM_RUNE).forEach(function (k) { sprite['golem_' + k] = makeSprite(SPRITES.golem, { r: GOLEM_RUNE[k] }); });
 
     function hash(x, y) {
@@ -120,10 +124,18 @@
         return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
     }
 
+    // Each dungeon has its own colour theme so they look different on the hub and in play.
+    var THEMES = {
+        default: { floorA: '#2b2547', floorB: '#272142', speck: '#332c55', wall: '#4a3d7a', wallDark: '#362c5c', wallLight: '#5d4f93' },
+        teal:    { floorA: '#1f3a44', floorB: '#1b333c', speck: '#28505c', wall: '#2f6b7a', wallDark: '#21505c', wallLight: '#43899a' },
+        ember:   { floorA: '#3d2b26', floorB: '#372621', speck: '#4d3830', wall: '#7a4a3a', wallDark: '#5c3529', wallLight: '#93614d' }
+    };
+    var theme = THEMES.default;
+
     function drawFloor(g, px, py, tx, ty) {
-        g.fillStyle = (tx + ty) % 2 ? '#2b2547' : '#272142';
+        g.fillStyle = (tx + ty) % 2 ? theme.floorA : theme.floorB;
         g.fillRect(px, py, TILE, TILE);
-        g.fillStyle = '#332c55';
+        g.fillStyle = theme.speck;
         for (var i = 0; i < 3; i++) {
             var r = hash(tx * 7 + i, ty * 13 + i);
             var r2 = hash(tx * 3 + i * 5, ty * 11 + i);
@@ -132,14 +144,14 @@
     }
 
     function drawWall(g, px, py) {
-        g.fillStyle = '#4a3d7a';
+        g.fillStyle = theme.wall;
         g.fillRect(px, py, TILE, TILE);
-        g.fillStyle = '#362c5c';
+        g.fillStyle = theme.wallDark;
         g.fillRect(px, py + 7, TILE, 1);
         g.fillRect(px, py + 15, TILE, 1);
         g.fillRect(px + 4, py, 1, 7);
         g.fillRect(px + 12, py + 8, 1, 7);
-        g.fillStyle = '#5d4f93';
+        g.fillStyle = theme.wallLight;
         g.fillRect(px, py, TILE, 1);
         g.fillRect(px, py + 8, TILE, 1);
     }
@@ -160,7 +172,8 @@
     }
 
     // Static background (floor, walls, spikes) is rendered once per room.
-    function renderBackground(room) {
+    function renderBackground(room, themeName) {
+        theme = THEMES[themeName] || THEMES.default;
         var c = document.createElement('canvas');
         c.width = COLS * TILE;
         c.height = ROWS * TILE;
@@ -253,7 +266,40 @@
                     '<b>Rules</b> do exactly what you wrote, so they are predictable and explainable, but only cover cases you thought of.',
                     '<b>Learning</b> finds the pattern from examples, so it copes with fuzzy problems and new cases, but it can be wrong and it needs good data.'],
                 ['How the words fit together: <b>AI</b> is the broad field. <b>Machine learning</b> is the part that learns from data. <b>Deep learning</b> uses large neural networks. <b>LLMs</b>, the chatbots, are deep-learning models trained on huge amounts of text.',
-                    '<span class="tip">Next: the Forge (bonus) lets you tweak Pip. Kinds of Models and Local vs Cloud are coming soon.</span>']
+                    '<span class="tip">Next: Kinds of Models. What does a language model really do, and what turns it into an agent?</span>']
+            ],
+            clearButton: 'Back to the dungeons'
+        },
+        models: {
+            intro: [
+                ['"AI" is not one thing. A spam filter, a chatbot and a logo painter are different <b>kinds</b> of model, built for different jobs.'],
+                ['Three chambers lie ahead: sort jobs by kind of model, find out how a language model really produces text, and see what <b>tools</b> turn a model into an agent.',
+                    '<span class="tip">Walk into a golem to challenge it.</span>']
+            ],
+            introButton: 'Enter the dungeon',
+            clearTitle: 'Kinds of Models cleared!',
+            clear: [
+                ['<b>Loot: the Tool Belt.</b>',
+                    '<b>Kinds:</b> classifiers pick labels, predictors forecast numbers, generators create content, recommenders rank, and agents act with tools.',
+                    '<b>Language models</b> generate one token at a time from probabilities. That is why they can be fluent and wrong.',
+                    '<b>Agents</b> are a model plus tools. Give a model only the tools the job needs.'],
+                ['<span class="tip">Next: Local vs Cloud. Where should a model run, and what does it cost?</span>']
+            ],
+            clearButton: 'Back to the dungeons'
+        },
+        local: {
+            intro: [
+                ['A model has to live somewhere. It can run on <b>your own machine</b> (local) or on <b>someone else\'s servers</b> (cloud). Each choice trades privacy, power and cost.'],
+                ['Three chambers lie ahead: fit a model into limited memory, decide where sensitive jobs should run, and find the point where local becomes cheaper.',
+                    '<span class="tip">Walk into a golem to challenge it.</span>']
+            ],
+            introButton: 'Enter the dungeon',
+            clearTitle: 'Local vs Cloud cleared!',
+            clear: [
+                ['<b>Loot: the Modelfile Anvil.</b> You know where models can run and what that costs.',
+                    '<b>Local:</b> private, works offline and has a fixed cost, but is limited by your hardware. Quantization lets bigger models fit.',
+                    '<b>Cloud:</b> the strongest models and no hardware to manage, but you pay per use and your data leaves your machine.'],
+                ['<span class="tip">The Forge is now open. Local models are tuned with a <b>modelfile</b>: temperature, context length and more.</span>']
             ],
             clearButton: 'Back to the dungeons'
         },
@@ -289,6 +335,26 @@
         vault: [
             ['The last door tests your judgement. For each job, would you write <b>rules</b> or have software <b>learn from examples</b>?',
                 '<span class="tip">Walk into the golem to begin.</span>']
+        ],
+        sorting: [
+            ['Different jobs call for different <b>kinds</b> of model. The Sorting Gate opens only for someone who can match each job to the right kind.', '<span class="tip">Walk into a golem to challenge it.</span>']
+        ],
+        tokens: [
+            ['Language models, the engines behind chatbots, are <b>generators</b>. Here is how they really work: one token at a time, each chosen by probability.',
+                'You will play the model. Pick the next token and watch the odds.', '<span class="tip">Walk into a golem to challenge it.</span>']
+        ],
+        agent: [
+            ['A model alone can only produce text. Give it <b>tools</b> and run it in a loop, and it becomes an <b>agent</b>.',
+                'Your job: equip each task with exactly the tools it needs.', '<span class="tip">Walk into a golem to challenge it.</span>']
+        ],
+        packing: [
+            ['A local model must fit in your machine\'s memory. Bigger models are generally better, but they need more space. <b>Quantization</b> compresses a model so a bigger one can fit.', '<span class="tip">Walk into a golem to challenge it.</span>']
+        ],
+        datagate: [
+            ['Sensitive data, no internet, a very hard problem: the right home for a model depends on the job.', '<span class="tip">Walk into a golem to challenge it.</span>']
+        ],
+        toll: [
+            ['Cloud costs scale with use. Local costs are fixed. Somewhere there is a crossover, and you are about to find it.', '<span class="tip">Walk into a golem to challenge it.</span>']
         ],
         wander: [
             ['Pip wants to reach the glowing plate. Every step it <b>scores</b> its four possible moves (closer to the plate scores higher) and then <b>picks one</b>.',
@@ -505,6 +571,36 @@
     /* Lessons: feel it -> name it -> use it                               */
     /* ------------------------------------------------------------------ */
     var LESSONS = {
+        kinds: [
+            '<b>Name it:</b> <i>model kinds</i>. Classifiers choose a label, predictors output a number, generators create new content, recommenders rank options, and agents act using tools.',
+            '<b>In the real world:</b> most products combine several. A classifier flags abuse, a recommender orders a feed, and a generator writes replies.',
+            '<b>Use it:</b> before reaching for a big chatbot, ask what the output actually is: a label, a number, new content, a ranking, or an action. The answer points to the right kind of model.'
+        ],
+        tokens: [
+            '<b>Name it:</b> <i>next-token prediction</i>. A language model repeatedly picks the next piece of text (a token) from a probability distribution.',
+            '<b>In the real world:</b> this is why chatbots sound fluent, and why they sometimes state false things confidently. Likely text is not verified fact. That failure is called <i>hallucination</i>.',
+            '<b>Use it:</b> treat model output as a draft to check. For facts that matter, give the model a source, or a tool to look things up.'
+        ],
+        agent: [
+            '<b>Name it:</b> an <i>agent</i> (and its <i>harness</i>): a model plus tools, run in a loop. The harness decides which tools the model may use and what happens with the results.',
+            '<b>In the real world:</b> coding assistants, research bots and support agents work this way. The same model with a better harness can do far more.',
+            '<b>Use it:</b> give a model only the tools a task needs. Every extra tool adds cost and a way for an attacker to misuse it, for example through prompt injection.'
+        ],
+        quant: [
+            '<b>Name it:</b> <i>quantization</i>. A model is stored as billions of numbers. Quantization stores them with fewer bits, so the model takes far less memory at a small cost in quality.',
+            '<b>In the real world:</b> it is why a large model can run on a laptop GPU. Local tools such as Ollama commonly ship quantized versions.',
+            '<b>Use it:</b> when memory is the limit, a bigger quantized model usually beats a smaller full-precision one.'
+        ],
+        privacy: [
+            '<b>Name it:</b> <i>data locality</i>. With a cloud model your prompts travel to someone else\'s servers. With a local model they never leave your machine.',
+            '<b>In the real world:</b> confidential code, health records and anything under regulation or an NDA are strong reasons to run locally or use a private deployment.',
+            '<b>Use it:</b> decide by the data, not by habit. Public, low-risk work suits the cloud. Sensitive work suits local.'
+        ],
+        cost: [
+            '<b>Name it:</b> <i>break-even</i>. Cloud is pay-per-use. Local is mostly a fixed cost. Below some volume the cloud is cheaper, above it local wins.',
+            '<b>In the real world:</b> real prices change, and local has hidden costs: setup time, maintenance, and hardware that can sit idle.',
+            '<b>Use it:</b> estimate your volume first. A few requests a day rarely justify hardware. Millions might.'
+        ],
         rules: [
             '<b>Name it:</b> a <i>rule-based system</i> (sometimes called symbolic AI). A person writes the logic, and the software follows it exactly.',
             '<b>In the real world:</b> tax software, thermostats and early spam filters work this way. They are predictable and easy to explain, but they only handle cases someone thought of.',
@@ -664,7 +760,7 @@
         var rooms = S.dungeon.rooms;
         S.roomIndex = index;
         S.room = L.parseRoom(rooms[index]);
-        S.bg = renderBackground(S.room);
+        S.bg = renderBackground(S.room, S.dungeon.theme);
         S.hero = { x: S.room.hero.x, y: S.room.hero.y };
         S.pip = { x: S.room.pip.x, y: S.room.pip.y, hp: L.PIP_MAX_HP, doorOpen: false, done: S.room.noPip };
         S.puzzleSolved = false;
@@ -731,7 +827,11 @@
     /* ------------------------------------------------------------------ */
     /* Puzzles (golem altars)                                              */
     /* ------------------------------------------------------------------ */
-    var PUZZLE_LESSON = { rules: 'rules', learn: 'learning', vault: 'vault' };
+    var PUZZLE_LESSON = {
+        rules: 'rules', learn: 'learning', vault: 'vault',
+        sorting: 'kinds', tokens: 'tokens', agent: 'agent',
+        packing: 'quant', datagate: 'privacy', toll: 'cost'
+    };
 
     function openPuzzle() {
         if (S.puzzleSolved) {
@@ -1015,12 +1115,19 @@
     function dungeonStatus(d) {
         if (!d.ready) { return { state: 'soon', text: 'Coming soon' }; }
         var done = !!S.progress.cleared[d.id];
-        if (d.unlockAfter && !S.progress.cleared[d.unlockAfter] && !done) {
-            var pre = dungeonById(d.unlockAfter);
-            return { state: 'locked', text: '🔒 Clear "' + (pre ? pre.title : d.unlockAfter) + '" first' };
+        var missing = (d.requires || []).filter(function (id) { return !S.progress.cleared[id]; });
+        if (missing.length && !done) {
+            var text;
+            if (d.requires.length > 1) {
+                text = '\uD83D\uDD12 Clear all of The Basics first';
+            } else {
+                var pre = dungeonById(missing[0]);
+                text = '\uD83D\uDD12 Clear "' + (pre ? pre.title : missing[0]) + '" first';
+            }
+            return { state: 'locked', text: text };
         }
-        if (done) { return { state: 'cleared', text: '★ Cleared!' }; }
-        return { state: 'ready', text: '▶ Play' };
+        if (done) { return { state: 'cleared', text: '\u2605 Cleared!' }; }
+        return { state: 'ready', text: '\u25B6 Play' };
     }
 
     function makeThumb(d) {
@@ -1035,13 +1142,14 @@
             var def = d.rooms[0];
             for (var i = 0; i < d.rooms.length; i++) { if (d.rooms[i].id === d.thumb) { def = d.rooms[i]; } }
             var room = L.parseRoom(def);
-            g.drawImage(renderBackground(room), 0, 0);
+            g.drawImage(renderBackground(room, d.theme), 0, 0);
             if (room.altar) { g.drawImage(sprite['golem_' + room.puzzle], room.altar.x * TILE, room.altar.y * TILE); }
             if (room.chest) { g.drawImage(sprite.chest, room.chest.x * TILE, room.chest.y * TILE); }
             if (room.plate) { g.fillStyle = '#ffd166'; g.fillRect(room.plate.x * TILE + 4, room.plate.y * TILE + 4, 8, 8); }
             g.drawImage(sprite.hero, room.hero.x * TILE, room.hero.y * TILE);
             if (!room.noPip) { g.drawImage(sprite.pip, room.pip.x * TILE, room.pip.y * TILE); }
         } else {
+            theme = THEMES.default;
             for (var y = 0; y < ROWS; y++) {
                 for (var x = 0; x < COLS; x++) { drawFloor(g, x * TILE, y * TILE, x, y); }
             }
