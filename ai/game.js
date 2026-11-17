@@ -114,7 +114,8 @@
     var GOLEM_RUNE = {
         rules: '#4cc9f0', learn: '#06d6a0', vault: '#ffd166',
         sorting: '#b18cff', tokens: '#ff9f43', agent: '#ff6b9d',
-        packing: '#4cc9f0', datagate: '#06d6a0', toll: '#ffd166'
+        packing: '#4cc9f0', datagate: '#06d6a0', toll: '#ffd166',
+        speed: '#ffd166', cache: '#4cc9f0', guardgate: '#ef476f'
     };
     Object.keys(GOLEM_RUNE).forEach(function (k) { sprite['golem_' + k] = makeSprite(SPRITES.golem, { r: GOLEM_RUNE[k] }); });
 
@@ -128,7 +129,8 @@
     var THEMES = {
         default: { floorA: '#2b2547', floorB: '#272142', speck: '#332c55', wall: '#4a3d7a', wallDark: '#362c5c', wallLight: '#5d4f93' },
         teal:    { floorA: '#1f3a44', floorB: '#1b333c', speck: '#28505c', wall: '#2f6b7a', wallDark: '#21505c', wallLight: '#43899a' },
-        ember:   { floorA: '#3d2b26', floorB: '#372621', speck: '#4d3830', wall: '#7a4a3a', wallDark: '#5c3529', wallLight: '#93614d' }
+        ember:   { floorA: '#3d2b26', floorB: '#372621', speck: '#4d3830', wall: '#7a4a3a', wallDark: '#5c3529', wallLight: '#93614d' },
+        steel:   { floorA: '#262d3d', floorB: '#222938', speck: '#303a4f', wall: '#4a5a7a', wallDark: '#364360', wallLight: '#62759b' }
     };
     var theme = THEMES.default;
 
@@ -299,7 +301,24 @@
                 ['<b>Loot: the Modelfile Anvil.</b> You know where models can run and what that costs.',
                     '<b>Local:</b> private, works offline and has a fixed cost, but is limited by your hardware. Quantization lets bigger models fit.',
                     '<b>Cloud:</b> the strongest models and no hardware to manage, but you pay per use and your data leaves your machine.'],
-                ['<span class="tip">The Forge is now open. Local models are tuned with a <b>modelfile</b>: temperature, context length and more.</span>']
+                ['<span class="tip">Next: Under the Hood. How fast do models run, what do caches save, and what is an uncensored model?</span>']
+            ],
+            clearButton: 'Back to the dungeons'
+        },
+        hood: {
+            intro: [
+                ['You know what AI is, what kinds exist, and where models run. Now look <b>under the hood</b>: how fast a model runs, what it can remember cheaply, and what stops it saying certain things.'],
+                ['Three chambers lie ahead: tokens per second, caches, and the difference between a normal and an uncensored model.',
+                    '<span class="tip">Walk into a golem to challenge it.</span>']
+            ],
+            introButton: 'Enter the dungeon',
+            clearTitle: 'Under the Hood cleared!',
+            clear: [
+                ['<b>Loot: the Stopwatch.</b>',
+                    '<b>Speed</b> is tokens per second plus time to first token. Model size, quantization and hardware decide it.',
+                    '<b>Caches</b> reuse earlier work: the KV cache lives inside the model, and prompt caching reuses an identical prefix. Put stable content first.',
+                    '<b>Uncensored</b> means fewer refusals, not more intelligence. It moves the safety job from the model to you.'],
+                ['<span class="tip">The Forge is now open. Local models are tuned with a <b>modelfile</b>: temperature, context length (num_ctx) and more.</span>']
             ],
             clearButton: 'Back to the dungeons'
         },
@@ -355,6 +374,15 @@
         ],
         toll: [
             ['Cloud costs scale with use. Local costs are fixed. Somewhere there is a crossover, and you are about to find it.', '<span class="tip">Walk into a golem to challenge it.</span>']
+        ],
+        speed: [
+            ['A model streams its answer out <b>one token at a time</b>. How fast depends on the model\'s size, its precision and the hardware, and a long prompt delays the very first token.', '<span class="tip">Walk into a golem to challenge it.</span>']
+        ],
+        cache: [
+            ['Re-reading a long prompt on every request is wasteful. A <b>cache</b> lets the system reuse work it already did, but only on an unchanged beginning.', '<span class="tip">Walk into a golem to challenge it.</span>']
+        ],
+        guardgate: [
+            ['Some models refuse risky requests. Others have had that removed. Which one belongs where depends on who is using it and what could go wrong.', '<span class="tip">Walk into a golem to challenge it.</span>']
         ],
         wander: [
             ['Pip wants to reach the glowing plate. Every step it <b>scores</b> its four possible moves (closer to the plate scores higher) and then <b>picks one</b>.',
@@ -571,6 +599,21 @@
     /* Lessons: feel it -> name it -> use it                               */
     /* ------------------------------------------------------------------ */
     var LESSONS = {
+        speed: [
+            '<b>Name it:</b> <i>tokens per second</i> is how fast text streams out. <i>Time to first token</i> is the wait before it starts, mostly the time spent reading your prompt.',
+            '<b>In the real world:</b> generating tokens is mostly limited by how fast the model\'s weights can be read from memory. So bigger models and higher precision run slower, and quantization often makes a model faster as well as smaller.',
+            '<b>Use it:</b> match speed to the job. A chat feels fine at reading speed, a voice assistant needs a fast first token, and an overnight batch only cares about total throughput.'
+        ],
+        cache: [
+            '<b>Name it:</b> <i>caching</i>. The <i>KV cache</i> stores the model\'s work on earlier tokens so it does not redo it for every new one. <i>Prompt caching</i> reuses that work across requests when the start of the prompt is identical.',
+            '<b>In the real world:</b> the KV cache grows with context length, which is why a bigger context window needs more memory. Providers discount cached tokens heavily and answer faster.',
+            '<b>Use it:</b> put stable content (instructions, tools, documents) first and changing content (the question, a timestamp) last.'
+        ],
+        guardrails: [
+            '<b>Name it:</b> <i>alignment</i> and <i>guardrails</i>. Alignment is training a model to refuse harmful requests. Guardrails are the other layers: system prompts, input and output filters, and permissions.',
+            '<b>In the real world:</b> an uncensored model has the training-level refusals reduced or removed. It is not smarter. Normal models sometimes <i>over-refuse</i> harmless work, while uncensored ones have no safety net at all.',
+            '<b>Use it:</b> decide by audience and worst case. If you remove a model\'s own refusals, you must add the protection somewhere else, such as isolation, filtering or human review. Jailbreaks are attempts to get around these layers.'
+        ],
         kinds: [
             '<b>Name it:</b> <i>model kinds</i>. Classifiers choose a label, predictors output a number, generators create new content, recommenders rank options, and agents act using tools.',
             '<b>In the real world:</b> most products combine several. A classifier flags abuse, a recommender orders a feed, and a generator writes replies.',
@@ -830,7 +873,8 @@
     var PUZZLE_LESSON = {
         rules: 'rules', learn: 'learning', vault: 'vault',
         sorting: 'kinds', tokens: 'tokens', agent: 'agent',
-        packing: 'quant', datagate: 'privacy', toll: 'cost'
+        packing: 'quant', datagate: 'privacy', toll: 'cost',
+        speed: 'speed', cache: 'cache', guardgate: 'guardrails'
     };
 
     function openPuzzle() {

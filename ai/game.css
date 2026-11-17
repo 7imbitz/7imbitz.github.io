@@ -492,6 +492,31 @@ button.pack.nofit { opacity: 0.55; }
 .toll input[type="range"] { width: 100%; accent-color: var(--accent); }
 .toll-row { grid-template-columns: 3.5em 1fr 3.5em; margin: 0.3em 0; }
 
+/* Cache Vault */
+.cache-list { display: grid; gap: 0.4em; margin: 0.4em 0; }
+.cache-row {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    grid-template-areas: "name tag btns" "note tag btns";
+    align-items: center;
+    column-gap: 0.7em;
+    padding: 0.4em 0.7em;
+    background: #120d22;
+    border: 2px solid var(--panel-border);
+    border-left-width: 6px;
+    border-radius: 6px;
+}
+.cache-row.hit { border-left-color: var(--green); }
+.cache-row.miss { border-left-color: var(--red); }
+.cache-name { grid-area: name; font-weight: bold; }
+.cache-row .small { grid-area: note; }
+.cache-tag { grid-area: tag; font-size: 0.75em; font-weight: bold; text-transform: uppercase; }
+.cache-row.hit .cache-tag { color: var(--green); }
+.cache-row.miss .cache-tag { color: var(--red); }
+.cache-btns { grid-area: btns; display: flex; gap: 0.3em; }
+.cache-bar { grid-template-columns: 4.5em 1fr 3em; }
+.cache-meter .score { margin: 0.3em 0 0.6em; }
+
 /* HUD variant for dungeons without Pip */
 .hud.solo { grid-template-columns: 1fr; }
 [hidden] { display: none !important; }

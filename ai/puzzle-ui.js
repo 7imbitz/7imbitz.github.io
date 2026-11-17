@@ -716,6 +716,167 @@
     }
 
     /* ---------------------------------------------------------------- */
+    /* Under the Hood, chamber 1: the Speed Run                          */
+    /* ---------------------------------------------------------------- */
+    function fmtTime(sec) {
+        if (sec < 60) { return sec.toFixed(1) + ' s'; }
+        if (sec < 3600) { return (sec / 60).toFixed(1) + ' min'; }
+        return (sec / 3600).toFixed(1) + ' h';
+    }
+
+    function buildSpeed(host, cb) {
+        var wrap = panelFrame('The Speed Run',
+            'Speed is measured in <b>tokens per second</b> (how fast text streams out) and <b>time to first token</b> (how long you wait before it starts). ' +
+            'Pick one setup for each job. <span class="small">(Speeds are rough illustrations.)</span>', cb);
+
+        var legend = h('ul', { class: 'legend' });
+        P.SPEED_SETUPS.forEach(function (s) {
+            legend.appendChild(h('li', {}, [h('b', { text: s.label + ':' }), ' ' + s.tps + ' tokens/s, first token after ' + s.ttft + ' s' + (s.local ? '' : ', needs internet')]));
+        });
+        wrap.appendChild(legend);
+
+        var chosen = P.SPEED_JOBS.map(function () { return null; });
+        var board = h('div', { class: 'agent-board' });
+        var results = h('div', { class: 'puz-result', 'aria-live': 'polite' });
+
+        P.SPEED_JOBS.forEach(function (job, i) {
+            var box = h('div', { class: 'q' }, [h('p', { class: 'q-text', text: (i + 1) + '. ' + job.text })]);
+            var row = h('div', { class: 'tool-row' });
+            var btns = [];
+            P.SPEED_SETUPS.forEach(function (setup) {
+                var b = h('button', { class: 'ghost tool', type: 'button', 'aria-pressed': 'false', text: setup.label });
+                b.addEventListener('click', function () {
+                    chosen[i] = setup.id;
+                    btns.forEach(function (x) { x.btn.className = 'ghost tool' + (x.id === setup.id ? ' on' : ''); x.btn.setAttribute('aria-pressed', x.id === setup.id ? 'true' : 'false'); });
+                });
+                btns.push({ id: setup.id, btn: b });
+                row.appendChild(b);
+            });
+            box.appendChild(row);
+            board.appendChild(box);
+        });
+
+        function setupById(id) { return P.SPEED_SETUPS.filter(function (s) { return s.id === id; })[0]; }
+
+        function run() {
+            clear(results);
+            var good = 0;
+            P.SPEED_JOBS.forEach(function (job, i) {
+                if (chosen[i] === null) {
+                    results.appendChild(h('p', { class: 'q-why wrong', text: '✗ ' + (i + 1) + '. Pick a setup for this job first.' }));
+                    return;
+                }
+                var setup = setupById(chosen[i]);
+                var r = P.speedResult(setup, job);
+                if (r.ok) { good++; }
+                var facts = 'First token ' + r.first + ' s, everything done in ' + fmtTime(r.total) + '.';
+                var why = '';
+                if (!r.ok) {
+                    if (job.maxTotal !== null && r.total > job.maxTotal) { why = ' Too slow: the limit is ' + fmtTime(job.maxTotal) + '.'; }
+                    else if (job.maxFirst !== null && r.first > job.maxFirst) { why = ' The first token arrives too late: the limit is ' + job.maxFirst + ' s.'; }
+                    else if (job.needLocal && !setup.local) { why = ' This job must stay offline, and a cloud model needs the internet.'; }
+                }
+                results.appendChild(h('p', { class: 'q-why ' + (r.ok ? 'ok' : 'wrong'), text: (r.ok ? '✓ ' : '✗ ') + (i + 1) + '. ' + setup.label + ': ' + facts + why }));
+            });
+            results.appendChild(h('p', { class: 'score ' + (good === P.SPEED_JOBS.length ? 'good' : 'bad'), text: good + ' / ' + P.SPEED_JOBS.length + ' jobs met' }));
+            if (good === P.SPEED_JOBS.length) {
+                results.appendChild(h('p', { text: 'Fast enough everywhere. Notice what drove speed: model size, precision (quantization), and the hardware doing the work. A longer prompt also delays the first token.' }));
+                results.appendChild(openDoorButton(cb));
+            } else {
+                results.appendChild(h('p', { text: 'Change your picks and run the race again.' }));
+            }
+        }
+
+        wrap.appendChild(board);
+        wrap.appendChild(h('button', { class: 'go', type: 'button', text: 'Run the race', on: { click: run } }));
+        wrap.appendChild(results);
+        host.appendChild(wrap);
+    }
+
+    /* ---------------------------------------------------------------- */
+    /* Under the Hood, chamber 2: the Cache Vault                        */
+    /* ---------------------------------------------------------------- */
+    function buildCache(host, cb) {
+        var wrap = panelFrame('The Cache Vault',
+            'A provider can <b>reuse work</b> it already did on the start of your prompt, but only an <b>identical prefix</b>: the moment one block differs, everything after it is processed again. ' +
+            'Reorder the blocks so the next request can reuse as much as possible. Reach ' + P.CACHE_PASS_PCT + '% reuse.', cb);
+
+        var order = P.CACHE_START_ORDER.slice();
+        var list = h('div', { class: 'cache-list' });
+        var meter = h('div', { class: 'cache-meter', 'aria-live': 'polite' });
+        var quizBox = h('div', { class: 'tok-quiz' });
+        var quizShown = false;
+
+        function move(i, dir) {
+            var j = i + dir;
+            if (j < 0 || j >= order.length) { return; }
+            var t = order[i]; order[i] = order[j]; order[j] = t;
+            render();
+        }
+
+        function render() {
+            clear(list);
+            var r = P.cacheReuse(order);
+            // blocks are reusable only while no changing block has appeared yet
+            var broken = false;
+            order.forEach(function (id, i) {
+                var b = P.cacheBlock(id);
+                var reusable = !broken && !b.changes;
+                if (b.changes) { broken = true; }
+                var row = h('div', { class: 'cache-row ' + (reusable ? 'hit' : 'miss') }, [
+                    h('span', { class: 'cache-name', text: b.label }),
+                    h('span', { class: 'small', text: b.tokens.toLocaleString() + ' tokens · ' + b.note }),
+                    h('span', { class: 'cache-tag', text: reusable ? 'reused' : 'reprocessed' })
+                ]);
+                var up = h('button', { class: 'ghost small', type: 'button', 'aria-label': 'Move ' + b.label + ' up', text: '▲' });
+                var down = h('button', { class: 'ghost small', type: 'button', 'aria-label': 'Move ' + b.label + ' down', text: '▼' });
+                up.disabled = i === 0;
+                down.disabled = i === order.length - 1;
+                up.addEventListener('click', function () { move(i, -1); });
+                down.addEventListener('click', function () { move(i, 1); });
+                row.appendChild(h('span', { class: 'cache-btns' }, [up, down]));
+                list.appendChild(row);
+            });
+
+            clear(meter);
+            var fill = h('div', { class: 'w-fill ' + (r.pct >= P.CACHE_PASS_PCT ? 'pos' : 'neg') });
+            fill.style.width = r.pct + '%';
+            meter.appendChild(h('div', { class: 'w-row cache-bar' }, [h('span', { class: 'w-name', text: 'Reused' }), h('div', { class: 'w-track' }, [fill]), h('span', { class: 'w-val', text: r.pct + '%' })]));
+            meter.appendChild(h('p', { class: 'score ' + (r.pct >= P.CACHE_PASS_PCT ? 'good' : 'bad'),
+                text: r.reused.toLocaleString() + ' of ' + r.total.toLocaleString() + ' tokens reused. Cost is about ' + r.costPct + '% of a request with no cache.' }));
+
+            if (r.pct >= P.CACHE_PASS_PCT && !quizShown) {
+                quizShown = true;
+                quizBox.appendChild(h('h3', { text: 'Check what you learned' }));
+                buildQuiz(quizBox, cb, {
+                    options: [], items: P.CACHE_QUESTIONS, pass: P.CACHE_QUESTIONS.length,
+                    passMsg: 'The vault opens. You know what a cache saves and what breaks it.'
+                });
+            }
+        }
+
+        wrap.appendChild(list);
+        wrap.appendChild(meter);
+        wrap.appendChild(quizBox);
+        host.appendChild(wrap);
+        render();
+    }
+
+    /* ---------------------------------------------------------------- */
+    /* Under the Hood, chamber 3: the Guardrail Gate                     */
+    /* ---------------------------------------------------------------- */
+    function buildGuardGate(host, cb) {
+        quizPanel(host, cb, 'The Guardrail Gate',
+            'Models can ship <b>normal</b> (aligned) or <b>uncensored</b>. Neither is "better": it depends on who uses the model and what the worst case is. Choose one for each job. Get 5 of ' + P.GUARD_SCENARIOS.length + ' right.',
+            {
+                options: [{ id: 'normal', label: 'Normal (aligned) model' }, { id: 'uncensored', label: 'Uncensored model' }],
+                legend: P.GUARD_PRIMER,
+                items: P.GUARD_SCENARIOS, pass: 5,
+                passMsg: 'The gate lifts. Remember: removing a model\'s refusals does not remove the risk, it moves the responsibility to you.'
+            });
+    }
+
+    /* ---------------------------------------------------------------- */
     /* public API                                                        */
     /* ---------------------------------------------------------------- */
     var api = {
@@ -734,6 +895,9 @@
             else if (kind === 'packing') { buildPacking(host, cb); }
             else if (kind === 'datagate') { buildDataGate(host, cb); }
             else if (kind === 'toll') { buildToll(host, cb); }
+            else if (kind === 'speed') { buildSpeed(host, cb); }
+            else if (kind === 'cache') { buildCache(host, cb); }
+            else if (kind === 'guardgate') { buildGuardGate(host, cb); }
         },
         close: function (silent) {
             if (!current) { return; }

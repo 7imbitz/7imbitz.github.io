@@ -192,6 +192,12 @@
         chamber(2, 'toll', 'The Toll Booth', 'Find where local becomes cheaper than the cloud.', 'toll')
     ];
 
+    var HOOD_ROOMS = [
+        chamber(0, 'speed', 'The Speed Run', 'Pick a setup that meets each job\'s speed needs.', 'speed'),
+        chamber(1, 'cache', 'The Cache Vault', 'Order the prompt so the cache can reuse as much as possible.', 'cache'),
+        chamber(2, 'guardgate', 'The Guardrail Gate', 'Choose a normal or an uncensored model for each job.', 'guardgate')
+    ];
+
     /*
      * Dungeons: each one teaches a different idea, unlocked in order.
      * `requires` lists the dungeons that must be cleared first.
@@ -240,6 +246,20 @@
             rooms: LOCAL_ROOMS
         },
         {
+            id: 'hood',
+            title: 'Under the Hood',
+            group: 'basics',
+            difficulty: 'medium',
+            unit: 'Chamber',
+            hud: 'basic',
+            theme: 'steel',
+            ready: true,
+            requires: ['local'],
+            blurb: 'Tokens per second, caches, and what separates a normal model from an uncensored one.',
+            thumb: 'speed',
+            rooms: HOOD_ROOMS
+        },
+        {
             id: 'forge',
             title: 'The Forge',
             group: 'bonus',
@@ -248,7 +268,7 @@
             hud: 'forge',
             theme: 'default',
             ready: true,
-            requires: ['ai', 'models', 'local'], // opens only when every Basics dungeon is cleared
+            requires: ['ai', 'models', 'local', 'hood'], // opens only when every Basics dungeon is cleared
             blurb: 'Tweak a companion like a modelfile. First dial: temperature. Pip joins you here.',
             thumb: 'hall',
             rooms: ROOMS

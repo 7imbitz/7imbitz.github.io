@@ -328,7 +328,103 @@
         { text: 'At 2,000 requests a day, which is cheaper per month?', answer: 'local', why: 'About $120 on the cloud against the same fixed $40 locally. At high volume, the fixed cost wins.' }
     ];
 
+    /* ================================================================ */
+    /* Dungeon 4: Under the Hood                                         */
+    /* ================================================================ */
+
+    // ---- Chamber 1: Speed Run (tokens per second). Illustrative numbers. ----
+    var SPEED_SETUPS = [
+        { id: 'a', label: '7B quantized on a GPU', tps: 60, ttft: 0.3, local: true },
+        { id: 'b', label: '7B quantized, CPU only', tps: 8, ttft: 2, local: true },
+        { id: 'c', label: '70B quantized on a big GPU', tps: 15, ttft: 1.5, local: true },
+        { id: 'd', label: '13B full precision on a GPU', tps: 25, ttft: 0.8, local: true },
+        { id: 'e', label: 'Cloud frontier model (API)', tps: 80, ttft: 0.6, local: false }
+    ];
+    var SPEED_JOBS = [
+        { text: 'Live chat: a 300-token reply must be complete within 10 seconds.', tokens: 300, maxTotal: 10, maxFirst: null, needLocal: false },
+        { text: 'Voice assistant: the first words must start within 1 second. Replies are short (50 tokens).', tokens: 50, maxTotal: null, maxFirst: 1, needLocal: false },
+        { text: 'Overnight batch: 2,000 documents x 400 tokens (800,000 tokens) must finish within 8 hours, and it has to stay offline.', tokens: 800000, maxTotal: 8 * 3600, maxFirst: null, needLocal: true }
+    ];
+    function speedResult(setup, job) {
+        var total = setup.ttft + job.tokens / setup.tps;
+        var reasons = [];
+        if (job.maxTotal !== null && total > job.maxTotal) { reasons.push('total time ' + total + ' is over the limit'); }
+        if (job.maxFirst !== null && setup.ttft > job.maxFirst) { reasons.push('first token is too slow'); }
+        if (job.needLocal && !setup.local) { reasons.push('it is not local'); }
+        return { total: total, first: setup.ttft, ok: reasons.length === 0, reasons: reasons };
+    }
+
+    // ---- Chamber 2: The Cache Vault (prompt/prefix caching + KV cache) ----
+    var CACHE_BLOCKS = [
+        { id: 'system', label: 'System prompt', tokens: 1500, changes: false, note: 'same on every request' },
+        { id: 'tools', label: 'Tool definitions', tokens: 800, changes: false, note: 'same on every request' },
+        { id: 'doc', label: 'Reference document', tokens: 4000, changes: false, note: 'same document all session' },
+        { id: 'time', label: 'Current timestamp', tokens: 20, changes: true, note: 'different every request' },
+        { id: 'question', label: 'User\'s new question', tokens: 100, changes: true, note: 'different every request' }
+    ];
+    var CACHE_START_ORDER = ['time', 'question', 'system', 'tools', 'doc'];
+    var CACHE_PASS_PCT = 95;
+    var CACHED_PRICE = 0.1; // cached tokens cost about 10% of normal (illustrative)
+
+    function cacheBlock(id) { return CACHE_BLOCKS.filter(function (b) { return b.id === id; })[0]; }
+
+    // A prompt cache can only reuse an identical PREFIX: once one block changes,
+    // everything after it has to be processed again.
+    function cacheReuse(order) {
+        var reused = 0;
+        var total = 0;
+        var broken = false;
+        order.forEach(function (id) {
+            var b = cacheBlock(id);
+            total += b.tokens;
+            if (!broken && !b.changes) { reused += b.tokens; } else { broken = true; }
+        });
+        var costPct = Math.round(100 * (reused * CACHED_PRICE + (total - reused)) / total);
+        return { reused: reused, total: total, pct: Math.round(100 * reused / total), costPct: costPct };
+    }
+
+    var CACHE_QUESTIONS = [
+        {
+            text: 'Why does a very long chat use more memory and get slower?',
+            options: [{ id: 'a', label: 'The KV cache grows with every token' }, { id: 'b', label: 'The model forgets how to read' }, { id: 'c', label: 'The GPU gets tired' }],
+            answer: 'a',
+            why: 'The model keeps stored keys and values for every token in the context. That KV cache grows with the context length, which is why a larger context window (num_ctx) needs more memory.'
+        },
+        {
+            text: 'You edit one line at the very start of a long prompt. What happens to the prompt cache?',
+            options: [{ id: 'a', label: 'Everything after that line is reprocessed' }, { id: 'b', label: 'Nothing, the cache is unaffected' }, { id: 'c', label: 'Only that one line is reprocessed' }],
+            answer: 'a',
+            why: 'A prompt cache matches an identical prefix. A change near the start invalidates everything after it. Put stable content first and changing content last.'
+        }
+    ];
+
+    // ---- Chamber 3: The Guardrail Gate (normal vs uncensored) ----
+    var GUARD_PRIMER = [
+        { label: 'Normal (aligned) model:', desc: 'trained to refuse clearly harmful requests and to behave safely by default.' },
+        { label: 'Uncensored model:', desc: 'a variant with that refusal behaviour reduced or removed. It is not smarter or more accurate, only less likely to say no.' },
+        { label: 'Guardrails also live outside the model:', desc: 'system prompts, input and output filters, permissions. Removing the model\'s own refusals makes these outer layers matter more.' }
+    ];
+    var GUARD_SCENARIOS = [
+        { text: 'A public chatbot on your company\'s website.', answer: 'normal', why: 'Anyone can type anything, including attempts to misuse it. Built-in refusals are a first line of defence, and you still add guardrails around the model.' },
+        { text: 'A homework helper used by children.', answer: 'normal', why: 'The people using it need protection, so keep the safety training inside the model.' },
+        { text: 'A bank\'s customer-support assistant.', answer: 'normal', why: 'A regulated setting where a harmful or wrong answer is costly. You want alignment plus filters, logging and limits.' },
+        { text: 'Brainstorming dark themes for a crime novel on your own laptop, where a normal model keeps refusing harmless fiction.', answer: 'uncensored', why: 'Over-refusal is the problem here. You are the only audience and you accept the responsibility, but note there is no safety net.' },
+        { text: 'An isolated security lab where analysts study malware and write detection rules on an air-gapped machine.', answer: 'uncensored', why: 'Normal models often refuse legitimate defensive research. In an isolated, controlled setting with trained users, a less restricted local model can be justified. The environment becomes the guardrail.' },
+        { text: 'A medical-information assistant for patients.', answer: 'normal', why: 'People may rely on the answers, so you want cautious behaviour and safe defaults.' }
+    ];
+
     var api = {
+        SPEED_SETUPS: SPEED_SETUPS,
+        SPEED_JOBS: SPEED_JOBS,
+        speedResult: speedResult,
+        CACHE_BLOCKS: CACHE_BLOCKS,
+        CACHE_START_ORDER: CACHE_START_ORDER,
+        CACHE_PASS_PCT: CACHE_PASS_PCT,
+        cacheBlock: cacheBlock,
+        cacheReuse: cacheReuse,
+        CACHE_QUESTIONS: CACHE_QUESTIONS,
+        GUARD_PRIMER: GUARD_PRIMER,
+        GUARD_SCENARIOS: GUARD_SCENARIOS,
         KINDS: KINDS,
         SORTING_JOBS: SORTING_JOBS,
         TOKEN_PROMPTS: TOKEN_PROMPTS,
