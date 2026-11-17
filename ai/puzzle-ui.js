@@ -1569,6 +1569,84 @@
             });
     }
 
+
+    /* ---------------------------------------------------------------- */
+    /* Agent Teams and Memory                                            */
+    /* ---------------------------------------------------------------- */
+    function buildTeam(host, cb) {
+        quizPanel(host, cb, 'The Team Table',
+            tr('More agents is not always better. For each job, decide how it should be staffed. Get 5 of {total} right.', { total: P.TEAM_ITEMS.length }),
+            {
+                options: P.TEAM_OPTIONS,
+                items: P.TEAM_ITEMS, pass: 5,
+                passMsg: 'The table is satisfied. Use a team when the job is big, independent or risky, and a single agent when it is not.'
+            });
+    }
+
+    function buildFiles(host, cb) {
+        quizPanel(host, cb, 'The Instruction Scrolls',
+            tr('Agents are shaped by plain text files. File names differ between tools, but the idea is the same. Decide where each line belongs. Get 6 of {total} right.', { total: P.FILE_ITEMS.length }),
+            {
+                options: P.FILE_OPTIONS,
+                legend: P.FILE_PRIMER,
+                items: P.FILE_ITEMS, pass: 6,
+                passMsg: 'The scrolls are sorted. Identity always loaded, skills on demand, memory kept between sessions, and secrets never.'
+            });
+    }
+
+    function buildMemFile(host, cb) {
+        var wrap = panelFrame('The Memory File',
+            tr('The memory file is loaded into <b>every</b> session, so each entry costs tokens every time. Keep what is useful, current and safe. Drop the rest. The file may hold {budget} tokens.', { budget: P.MEM_BUDGET }), cb);
+        var keeps = P.MEM_ENTRIES.map(function () { return true; });
+        var list = h('div', { class: 'memfile' });
+        var meter = h('p', { class: 'ctx-state', 'aria-live': 'polite' });
+        var results = h('div', { class: 'puz-result', 'aria-live': 'polite' });
+
+        function renderList() {
+            clear(list);
+            P.MEM_ENTRIES.forEach(function (en, i) {
+                var box = h('div', { class: 'q' }, [h('p', { class: 'q-text', raw: (i + 1) + '. ' + en.text + ' (' + tr('{n} tokens', { n: en.tokens }) + ')' })]);
+                var btns = h('div', { class: 'q-btns' });
+                [['Keep', true], ['Forget', false]].forEach(function (o) {
+                    var on = keeps[i] === o[1];
+                    var b = h('button', { class: 'ghost tool' + (on ? ' on' : ''), type: 'button', 'aria-pressed': on ? 'true' : 'false', text: o[0] });
+                    b.addEventListener('click', function () { keeps[i] = o[1]; clear(results); renderList(); });
+                    btns.appendChild(b);
+                });
+                box.appendChild(btns);
+                list.appendChild(box);
+            });
+            var r = P.memFileResult(keeps);
+            meter.textContent = tr('Memory file: {used} of {budget} tokens', { used: r.tokens, budget: P.MEM_BUDGET });
+            meter.className = 'ctx-state ' + (r.over ? 'bad' : 'good');
+        }
+
+        function save() {
+            clear(results);
+            var r = P.memFileResult(keeps);
+            var good = 0;
+            r.rows.forEach(function (row, i) {
+                if (row.ok) { good++; }
+                results.appendChild(h('p', { class: 'q-why ' + (row.ok ? 'ok' : 'wrong'), raw: (row.ok ? '✓ ' : '✗ ') + (i + 1) + '. ' + row.entry.why }));
+            });
+            results.appendChild(h('p', { class: 'score ' + (r.ok ? 'good' : 'bad'), raw: tr('{good} / {total} entries handled correctly', { good: good, total: r.rows.length }) }));
+            if (r.over) { results.appendChild(h('p', { text: 'The memory file is over its token budget. Forget more.' })); }
+            if (r.ok) {
+                results.appendChild(h('p', { text: 'A tidy memory helps. A cluttered one costs tokens, misleads the agent, and can leak secrets.' }));
+                results.appendChild(openDoorButton(cb));
+            } else {
+                results.appendChild(h('p', { text: 'Adjust what you keep and save again.' }));
+            }
+        }
+
+        renderList();
+        wrap.appendChild(list);
+        wrap.appendChild(meter);
+        wrap.appendChild(h('button', { class: 'go', type: 'button', text: 'Save the memory', on: { click: save } }));
+        wrap.appendChild(results);
+        host.appendChild(wrap);
+    }
+
     /* ---------------------------------------------------------------- */
     /* public API                                                        */
     /* ---------------------------------------------------------------- */
@@ -1603,6 +1681,9 @@
             else if (kind === 'shelf') { buildShelf(host, cb); }
             else if (kind === 'socket') { buildSocket(host, cb); }
             else if (kind === 'pit') { buildPit(host, cb); }
+            else if (kind === 'team') { buildTeam(host, cb); }
+            else if (kind === 'files') { buildFiles(host, cb); }
+            else if (kind === 'memfile') { buildMemFile(host, cb); }
         },
         close: function (silent) {
             if (!current) { return; }

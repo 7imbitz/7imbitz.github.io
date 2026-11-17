@@ -308,6 +308,12 @@
         chamber(2, 'pit', 'The Error Pit', 'Decide what the harness does when a tool call goes wrong.', 'pit')
     ];
 
+    var TEAMS_ROOMS = [
+        chamber(0, 'teamtable', 'The Team Table', 'Decide when a job needs a team of agents.', 'team'),
+        chamber(1, 'scrolls', 'The Instruction Scrolls', 'Sort each line into soul, skills or memory.', 'files'),
+        chamber(2, 'memfile', 'The Memory File', 'Keep what is worth remembering, within the token budget.', 'memfile')
+    ];
+
     var LOCAL_ROOMS = [
         chamber(0, 'packing', 'The Packing Room', 'Fit the best model into each machine\'s memory.', 'packing'),
         chamber(1, 'datagate', 'The Data Gate', 'Decide where each job should run: local or cloud.', 'datagate'),
@@ -436,6 +442,20 @@
             blurb: 'How a model picks a tool, what MCP plugs in, and what the harness does when a call goes wrong.',
             thumb: 'socket',
             rooms: TOOLS_ROOMS
+        },
+        {
+            id: 'teams',
+            title: 'Agent Teams and Memory',
+            group: 'bonus',
+            difficulty: 'hard',
+            unit: 'Chamber',
+            hud: 'basic',
+            theme: 'teal',
+            ready: true,
+            requires: ['ai', 'models', 'talk', 'trust', 'local', 'tools'], // bonus: after the Basics and Tools and MCP
+            blurb: 'When to use a team of agents, what soul, skills and memory files are for, and what to remember.',
+            thumb: 'scrolls',
+            rooms: TEAMS_ROOMS
         },
         {
             id: 'forge',

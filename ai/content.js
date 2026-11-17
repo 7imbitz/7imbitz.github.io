@@ -122,6 +122,23 @@
                     '<b>Descriptions:</b> a model picks a tool by reading its description. Make it specific, and say what the tool is not for.',
                     '<b>MCP:</b> a standard plug that lets any harness use any server. It makes connecting easy, so least privilege and trust matter more.',
                     '<b>Errors:</b> the harness retries, trims, refuses or reports, and gives the model the errors it can fix.'],
+                ['<span class="tip">Next: Agent Teams and Memory. When do you need several agents, and what are soul.md, skills.md and memory.md?</span>']
+            ],
+            clearButton: 'Back to the dungeons'
+        },
+        teams: {
+            intro: [
+                ['One agent can do a lot. Now see when you need <b>several</b>, and how agents keep their identity, skills and memories in plain files.'],
+                ['Three chambers lie ahead: when a team beats a single agent, which file each instruction belongs in, and what a memory is worth keeping.',
+                    '<span class="tip">Walk into a golem to challenge it.</span>']
+            ],
+            introButton: 'Enter the dungeon',
+            clearTitle: 'Agent Teams and Memory cleared!',
+            clear: [
+                ['<b>Loot: the Banner.</b>',
+                    '<b>Teams:</b> use several agents when the job is big, independent or risky: split the work, run parts in parallel, and have a separate reviewer check it. A tiny job needs one agent.',
+                    '<b>Files:</b> identity and core rules are always loaded (soul), methods are loaded when needed (skills), and facts learned over time are kept between sessions (memory). Secrets are never stored.',
+                    '<b>Memory:</b> every entry costs tokens every session, so keep what is useful, current and safe, and prune the rest.'],
                 ['<span class="tip">Try the Forge next. Local models are tuned with a <b>modelfile</b>: temperature, context length (num_ctx) and the system prompt.</span>']
             ],
             clearButton: 'Back to the dungeons'
@@ -236,6 +253,18 @@
         runaway: [
             ['Four agents are about to go wrong: one repeats itself, one is doing real work, one tries a big purchase, and one wanders aimlessly.',
                 'Set the limits in the harness so that every runaway is stopped, but the genuine task is allowed to finish.', '<span class="tip">Walk into a golem to challenge it.</span>']
+        ],
+        teamtable: [
+            ['A team of agents can split a big job, work on parts at the same time, and check each other. It also costs more and needs coordinating.',
+                'For each job, decide whether one agent is enough, whether independent parts should run in parallel, or whether an author needs a separate reviewer.', '<span class="tip">Walk into a golem to challenge it.</span>']
+        ],
+        scrolls: [
+            ['Agents are shaped by plain text files. Names vary between tools, but three jobs keep appearing: <b>soul</b> (who the agent is), <b>skills</b> (how to do a job) and <b>memory</b> (what it has learned).',
+                'Sort each line into the right file, or decide it should not be stored at all.', '<span class="tip">Walk into a golem to challenge it.</span>']
+        ],
+        memfile: [
+            ['The memory file is read at the start of every session, so it takes up context every single time.',
+                'Decide what to keep and what to forget: out-of-date facts, duplicates, contradictions, huge dumps and secrets do not belong.', '<span class="tip">Walk into a golem to challenge it.</span>']
         ],
         shelf: [
             ['A model never sees the code of a tool. All it has is a name and a short <b>description</b>, and it chooses from those.',
@@ -386,6 +415,21 @@
             '<b>In the real world:</b> real prices change, and local has hidden costs: setup time, maintenance, and hardware that can sit idle.',
             '<b>Use it:</b> estimate your volume first. A few requests a day rarely justify hardware. Millions might.'
         ],
+        teams: [
+            '<b>Name it:</b> a <i>multi-agent team</i>: several agents with different roles, such as an orchestrator that splits the job, workers that do the parts, and a reviewer that checks the result.',
+            '<b>In the real world:</b> teams help when parts are independent or when a fresh pair of eyes catches mistakes. They also cost more tokens, add delay, and can pass errors along. For small jobs a single agent is better.',
+            '<b>Use it:</b> start with one agent, add more only when the job is big, parallel or risky, give each agent a narrow role and limited tools, and keep a human sign-off for what matters.'
+        ],
+        agentfiles: [
+            '<b>Name it:</b> <i>instruction files</i>: plain text the harness feeds to an agent. A <i>soul</i> file sets identity, tone and core rules, <i>skills</i> files describe how to do particular jobs, and a <i>memory</i> file keeps facts between sessions. The file names differ between tools.',
+            '<b>In the real world:</b> everything loaded costs context and shapes behaviour, so always-on text should be short and important, while methods load only when needed. These files are plain text, so never put secrets in them, and treat any file an agent can edit as something that can be tampered with.',
+            '<b>Use it:</b> put identity and hard rules in the always-loaded file, procedures in skills, and learned facts in memory, and review them like code.'
+        ],
+        agentmemory: [
+            '<b>Name it:</b> <i>agent memory</i>: notes an agent keeps between sessions so it does not start from zero each time.',
+            '<b>In the real world:</b> memory is loaded into the context, so it costs tokens every session. Stale or contradictory notes make an agent confidently wrong, and a wrong note can persist for a long time. Secrets and private data can leak.',
+            '<b>Use it:</b> store short, current, useful facts, merge duplicates, delete what is out of date, never store secrets, and let people see and edit what the agent remembers.'
+        ],
         toolspec: [
             '<b>Name it:</b> a <i>tool description</i> (or tool schema): the name, purpose and inputs that a model reads to decide which tool to call.',
             '<b>In the real world:</b> the description is the whole interface. A vague one is ignored, and a broad one makes two tools overlap, so the model guesses and may reach for the risky one. Say what the tool does, when to use it, and when not to.',
@@ -467,6 +511,9 @@
         speed:      { dungeon: 'hood',   title: 'Tokens per second',         where: 'The Speed Run',        line: 'Match speed to the job: wait for the first token, streaming rate, or total throughput.' },
         cache:      { dungeon: 'hood',   title: 'Caching',                   where: 'The Cache Vault',      line: 'Put stable content first in a prompt so the cache can reuse it.' },
         guardrails: { dungeon: 'hood',   title: 'Alignment and guardrails',  where: 'The Guardrail Gate',   line: 'Uncensored removes a model\'s refusals, not the risk. Add protection somewhere else.' },
+        teams:      { dungeon: 'teams',   title: 'Agent teams',            where: 'The Team Table',       line: 'Use a team for big, independent or risky jobs. A small job needs one agent.' },
+        agentfiles: { dungeon: 'teams',   title: 'Soul, skills and memory', where: 'The Instruction Scrolls', line: 'Identity always loaded, skills on demand, memory between sessions, secrets never.' },
+        agentmemory: { dungeon: 'teams',  title: 'Agent memory',           where: 'The Memory File',      line: 'Keep notes short, current and safe. Prune what is stale, duplicated or secret.' },
         toolspec:   { dungeon: 'tools',   title: 'Tool descriptions',      where: 'The Tool Shelf',       line: 'A model picks a tool by its description. Be specific, and say what it is not for.' },
         mcp:        { dungeon: 'tools',   title: 'MCP and permissions',    where: 'The Socket Hall',      line: 'MCP is a standard plug. Trust each server carefully and give it only the access it needs.' },
         toolerrors: { dungeon: 'tools',   title: 'Tool errors',            where: 'The Error Pit',        line: 'Retry the temporary, return the fixable, trim the huge and refuse the forbidden.' },
