@@ -629,6 +629,13 @@ button.doc { display: grid; gap: 0.15em; text-align: left; white-space: normal; 
 .q.maybe { border-color: var(--accent); }
 .q.maybe .q-why { color: var(--accent); }
 
+/* Context length panel (memory rooms) */
+.panel.wide { grid-column: 1 / -1; }
+.ctx-mem { grid-template-columns: 4.5em 1fr 13em; margin: 0.4em 0; }
+.ctx-state { margin: 0.4em 0; font-weight: bold; min-height: 1.4em; }
+.ctx-state.good { color: var(--green); }
+.ctx-state.bad { color: var(--red); }
+
 /* HUD variant for dungeons without Pip */
 .hud.solo { grid-template-columns: 1fr; }
 [hidden] { display: none !important; }

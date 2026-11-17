@@ -79,6 +79,20 @@
                     <p class="hp" id="hp" aria-live="polite"></p>
                     <p class="small" id="objective"></p>
                 </div>
+
+                <div class="panel wide" id="panel-ctx" hidden>
+                    <h3 data-t="Context length (num_ctx)">Context length (num_ctx)</h3>
+                    <div class="dial">
+                        <button type="button" id="ctx-down" aria-label="Shorter context" data-t-aria="Shorter context">&minus;</button>
+                        <input type="range" id="ctx-slider" min="0" max="5" step="1" value="1" aria-label="Context length" data-t-aria="Context length">
+                        <button type="button" id="ctx-up" aria-label="Longer context" data-t-aria="Longer context">+</button>
+                    </div>
+                    <p class="dial-value"><span id="ctx-value">8 tokens</span></p>
+                    <div class="w-row ctx-mem"><span class="w-name" data-t="Memory">Memory</span><div class="w-track"><div class="w-fill pos" id="ctx-fill"></div></div><span class="w-val" id="ctx-vram"></span></div>
+                    <p class="ctx-state" id="ctx-state" aria-live="polite"></p>
+                    <p class="small" data-t="A longer context remembers more but needs more memory (VRAM). Changing it reloads the model, so Pip starts again.">A longer context remembers more but needs more memory (VRAM). Changing it reloads the model, so Pip starts again.</p>
+                    <p class="small" data-t-html="Keys: &lt;kbd&gt;Z&lt;/kbd&gt; shorter · &lt;kbd&gt;C&lt;/kbd&gt; longer">Keys: <kbd>Z</kbd> shorter &middot; <kbd>C</kbd> longer</p>
+                </div>
             </section>
 
             <section class="note" id="note" aria-live="polite"></section>

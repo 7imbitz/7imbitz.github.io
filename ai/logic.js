@@ -23,6 +23,13 @@
     var GREEDY_BELOW = 0.05; // below this, temperature is treated as 0 (argmax)
     var PIP_MAX_HP = 3;
 
+    // num_ctx: how many tokens (here: steps) Pip can hold in mind. A bigger window needs more memory
+    // (the KV cache), and every machine has a fixed amount of it.
+    var CTX_OPTIONS = [4, 8, 16, 32, 64, 128];
+    var CTX_BASE_GB = 3;      // the model's own weights
+    var CTX_KV_GB = 0.04;     // memory per token of context
+    function ctxVram(n) { return Math.round((CTX_BASE_GB + n * CTX_KV_GB) * 100) / 100; }
+
     /*
      * Legend: # wall . floor S spikes P plate D exit door K chest
      *         H hero start  C Pip start
@@ -91,6 +98,40 @@
                 '#......#.......#',
                 '#......#.......#',
                 '#H.....#.......D',
+                '################'
+            ]
+        },
+        {
+            id: 'scroll',
+            title: 'The Scroll Room',
+            objective: 'Pip must remember the scroll across a long walk. Choose a context length that is long enough, yet fits in memory.',
+            memory: { route: [[1, 1], [11, 1], [11, 6], [10, 4]], junction: [10, 4], budget: 6 },
+            map: [
+                '################',
+                '#..............#',
+                '#............X.#',
+                '#..............#',
+                '#.H..........Y.D',
+                '#..............#',
+                '#............Z.#',
+                '#R.............#',
+                '################'
+            ]
+        },
+        {
+            id: 'longscroll',
+            title: 'The Long Walk',
+            objective: 'Same scroll, a much longer walk. Which setting is just big enough?',
+            memory: { route: [[14, 7], [14, 1], [1, 1], [1, 5], [12, 5], [10, 4]], junction: [10, 4], budget: 6 },
+            map: [
+                '################',
+                '#..............#',
+                '#............X.#',
+                '#..............#',
+                '#.H..........Y.D',
+                '#..............#',
+                '#............Z.#',
+                '#R.............#',
                 '################'
             ]
         },
@@ -329,7 +370,7 @@
             theme: 'default',
             ready: true,
             requires: ['ai', 'models', 'talk', 'trust', 'local'], // bonus: opens once every Basics dungeon is cleared
-            blurb: 'Tweak a companion like a modelfile. First dial: temperature. Pip joins you here.',
+            blurb: 'Tweak a companion like a modelfile: temperature and context length. Pip joins you here.',
             thumb: 'hall',
             rooms: ROOMS
         }
@@ -344,6 +385,9 @@
             followHero: !!def.followHero,
             trial: !!def.trial,
             noPip: !!def.noPip,
+            memory: def.memory || null,
+            scroll: null,
+            mplates: [],
             puzzle: def.puzzle || null,
             altar: null,
             spikePenalty: def.spikePenalty != null ? def.spikePenalty : SPIKE_PENALTY,
@@ -364,6 +408,10 @@
                 if (c === 'D') { room.door = { x: x, y: y }; }
                 if (c === 'K') { room.chest = { x: x, y: y }; }
                 if (c === 'A') { room.altar = { x: x, y: y }; }
+                if (c === 'R') { room.scroll = { x: x, y: y }; room.pip = { x: x, y: y }; }
+                if (c === 'X') { room.mplates.push({ x: x, y: y, id: 0 }); }
+                if (c === 'Y') { room.mplates.push({ x: x, y: y, id: 1 }); }
+                if (c === 'Z') { room.mplates.push({ x: x, y: y, id: 2 }); }
                 row.push(c);
             }
             grid.push(row);
@@ -419,24 +467,34 @@
         return probs.length - 1;
     }
 
+    // Total steps of a memory room's route when Pip walks it straight (temperature 0).
+    function routeLength(room) {
+        var x = room.pip.x;
+        var y = room.pip.y;
+        var n = 0;
+        room.memory.route.forEach(function (p) { n += Math.abs(p[0] - x) + Math.abs(p[1] - y); x = p[0]; y = p[1]; });
+        return n;
+    }
+
     function pipTarget(room, hero) {
         return room.followHero ? hero : room.plate;
     }
 
     // One Pip step. Mutates `pip` ({x,y,hp,doorOpen}).
-    function pipStep(room, pip, T, rnd, hero) {
-        var target = pipTarget(room, hero);
+    function pipStep(room, pip, T, rnd, hero, targetOverride) {
+        var target = targetOverride || pipTarget(room, hero);
         var probs = softmax(pipScores(room, pip, target), T);
         var i = sampleIndex(probs, rnd);
         var d = DIRS[i];
         var nx = pip.x + d.dx;
         var ny = pip.y + d.dy;
         var blocked = pipBlocked(room, nx, ny, pip.doorOpen);
-        var res = { dir: i, bumped: blocked, hitSpike: false, onPlate: false, probs: probs };
+        var res = { dir: i, bumped: blocked, hitSpike: false, onPlate: false, probs: probs, tile: null };
         if (!blocked) {
             pip.x = nx;
             pip.y = ny;
             var t = tileAt(room, nx, ny);
+            res.tile = t;
             if (t === 'S') { pip.hp -= 1; res.hitSpike = true; }
             if (t === 'P') { res.onPlate = true; }
         }
@@ -459,6 +517,9 @@
         COLS: COLS,
         ROWS: ROWS,
         PIP_MAX_HP: PIP_MAX_HP,
+        CTX_OPTIONS: CTX_OPTIONS,
+        ctxVram: ctxVram,
+        routeLength: routeLength,
         SPIKE_PENALTY: SPIKE_PENALTY,
         ROOMS: ROOMS,           // the Forge rooms (kept for the tuning scripts)
         AI_ROOMS: AI_ROOMS,

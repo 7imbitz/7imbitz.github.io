@@ -17,6 +17,7 @@
     var COLS = L.COLS;
     var ROWS = L.ROWS;
     var STEP_MS = 380;       // how often Pip takes a step
+    var STEP_MS_MEMORY = 200; // the memory rooms need many steps, so Pip walks faster there
     var HERO_REPEAT_MS = 90; // key-repeat limit for the Hero
 
     /* ------------------------------------------------------------------ */
@@ -42,7 +43,9 @@
         screenWrap: $('screen-wrap'), puzzle: $('puzzle'),
         hud: $('hud'), panelDial: $('panel-dial'), panelBars: $('panel-bars'),
         pipTitle: $('pip-title'), logPanel: $('log-panel'), keysDial: $('keys-dial'),
-        langEn: $('lang-en'), langBm: $('lang-bm')
+        langEn: $('lang-en'), langBm: $('lang-bm'),
+        panelCtx: $('panel-ctx'), ctxSlider: $('ctx-slider'), ctxDown: $('ctx-down'), ctxUp: $('ctx-up'),
+        ctxValue: $('ctx-value'), ctxFill: $('ctx-fill'), ctxVram: $('ctx-vram'), ctxState: $('ctx-state')
     };
 
     /* ------------------------------------------------------------------ */
@@ -244,6 +247,43 @@
         ctx.fillRect(px + 6, py + 6, TILE - 12, TILE - 12);
     }
 
+    var PLATE_FILL = ['#ef476f', '#4cc9f0', '#06d6a0'];
+
+    function drawMemoryProps(r) {
+        // lanterns mark the route Pip will walk (the last one is the junction where it must choose)
+        r.memory.route.forEach(function (w, i) {
+            var last = i === r.memory.route.length - 1;
+            ctx.fillStyle = last ? 'rgba(255, 209, 102, 0.9)' : 'rgba(255, 209, 102, 0.45)';
+            if (last) { ctx.fillRect(w[0] * TILE + 2, w[1] * TILE + 2, 12, 1); ctx.fillRect(w[0] * TILE + 2, w[1] * TILE + 13, 12, 1); ctx.fillRect(w[0] * TILE + 2, w[1] * TILE + 2, 1, 12); ctx.fillRect(w[0] * TILE + 13, w[1] * TILE + 2, 1, 12); }
+            else { ctx.fillRect(w[0] * TILE + 6, w[1] * TILE + 6, 4, 4); }
+        });
+        // the plates
+        r.mplates.forEach(function (pl) {
+            var px = pl.x * TILE;
+            var py = pl.y * TILE;
+            ctx.fillStyle = '#1c1736';
+            ctx.fillRect(px + 1, py + 1, TILE - 2, TILE - 2);
+            ctx.fillStyle = PLATE_FILL[pl.id];
+            ctx.fillRect(px + 3, py + 3, TILE - 6, TILE - 6);
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.35)';
+            ctx.fillRect(px + 5, py + 5, TILE - 12, TILE - 12);
+        });
+        // the scroll Pip reads at the start
+        if (r.scroll) {
+            var sx = r.scroll.x * TILE;
+            var sy = r.scroll.y * TILE;
+            ctx.fillStyle = '#e9d8a6';
+            ctx.fillRect(sx + 3, sy + 4, 10, 9);
+            ctx.fillStyle = '#c9b377';
+            ctx.fillRect(sx + 3, sy + 4, 10, 1);
+            ctx.fillRect(sx + 3, sy + 12, 10, 1);
+            ctx.fillStyle = '#7a6a3a';
+            ctx.fillRect(sx + 5, sy + 6, 6, 1);
+            ctx.fillRect(sx + 5, sy + 8, 6, 1);
+            ctx.fillRect(sx + 5, sy + 10, 4, 1);
+        }
+    }
+
     function drawBubble(px, py, kind) {
         // small speech bubble above a character
         var bx = px + 3;
@@ -284,6 +324,8 @@
         hero: { x: 1, y: 1 },
         pip: { x: 1, y: 1, hp: L.PIP_MAX_HP, doorOpen: false, done: false },
         T: 0.0,
+        ctx: 8,              // num_ctx: Pip's context length in tokens (steps)
+        mem: null,           // the current attempt in a memory room
         acc: 0,
         trail: [],           // Pip's footprints: {x, y, t}
         trial: { cold: null, hot: null }, // Wander Test: steps taken by each run
@@ -403,7 +445,7 @@
         var probs = null;
         var scores = null;
         if (active) {
-            var target = L.pipTarget(S.room, S.hero);
+            var target = S.room.memory ? memTarget() : L.pipTarget(S.room, S.hero);
             scores = L.pipScores(S.room, S.pip, target);
             probs = L.softmax(scores, S.T);
         }
@@ -438,6 +480,7 @@
             if (el.objective.textContent !== tt) { el.objective.textContent = tt; }
         }
         updateBars();
+        updateCtxPanel();
         var idle;
         if (S.dungeon && S.dungeon.hud === 'basic' && S.room) {
             idle = '<strong>' + S.room.title + '.</strong> ' + S.room.objective; // already translated room text
@@ -534,6 +577,7 @@
     }
 
     function resetPipRun() {
+        if (S.room.memory) { memStart(); memAnnounce(); }
         S.pip.x = S.room.pip.x;
         S.pip.y = S.room.pip.y;
         S.pip.hp = L.PIP_MAX_HP;
@@ -584,6 +628,132 @@
     }
 
     /* ------------------------------------------------------------------ */
+    /* Memory rooms: num_ctx, the context window                           */
+    /* ------------------------------------------------------------------ */
+    var CTX = L.CTX_OPTIONS;
+    var PLATE_COLORS = ['red', 'blue', 'green'];
+    var PLATE_ID = { X: 0, Y: 1, Z: 2 };
+
+    function memStart() {
+        // a fresh attempt: Pip reads the scroll (the clue is random) and sets off
+        S.mem = { steps: 0, wp: 0, clue: Math.floor(Math.random() * 3), decided: false, remembered: null, chosen: null, oomFor: null };
+    }
+
+    function memAnnounce() {
+        if (!S.mem) { return; }
+        setNote(tr('<strong>The scroll says:</strong> the treasure door is the {color} plate. Pip reads it and sets off.', { color: tr(PLATE_COLORS[S.mem.clue]) }), '', 9000);
+    }
+
+    // Where Pip is heading: along the route first, then to the plate it has chosen.
+    function memTarget() {
+        var route = S.room.memory.route;
+        var m = S.mem;
+        if (m && m.decided) {
+            var pl = S.room.mplates.filter(function (x) { return x.id === m.chosen; })[0];
+            return { x: pl.x, y: pl.y };
+        }
+        var w = route[Math.min(m ? m.wp : 0, route.length - 1)];
+        return { x: w[0], y: w[1] };
+    }
+
+    function ctxNeed() { return L.ctxVram(S.ctx); }
+    function ctxFits() { return ctxNeed() <= S.room.memory.budget; }
+
+    function setCtx(v, quiet) {
+        var i = CTX.indexOf(v);
+        if (i < 0) { return; }
+        var changed = v !== S.ctx;
+        S.ctx = v;
+        el.ctxSlider.value = String(i);
+        // changing num_ctx reloads a real model, so Pip has to start again
+        if (changed && !quiet && S.room && S.room.memory && S.mem && S.mem.steps > 0 && !S.pip.done) {
+            S.pipWait = 0;
+            resetPipRun();
+            setNote(tr('<strong>Model reloaded.</strong> Changing num_ctx restarts the model, so Pip starts again.'), '', 7000);
+        }
+    }
+
+    function memDecide() {
+        var m = S.mem;
+        m.decided = true;
+        m.remembered = m.steps <= S.ctx;
+        m.chosen = m.remembered ? m.clue : Math.floor(Math.random() * 3);
+        if (m.remembered) {
+            setNote(tr('<strong>Pip remembers.</strong> The scroll is {n} tokens back, still inside its {ctx}-token window, so it heads for the {color} plate.', { n: m.steps, ctx: S.ctx, color: tr(PLATE_COLORS[m.clue]) }), 'good', 7000);
+        } else {
+            setNote(tr('<strong>Pip has forgotten the scroll.</strong> It is {n} tokens back, outside the {ctx}-token window. Pip can only guess.', { n: m.steps, ctx: S.ctx }), 'bad', 7000);
+        }
+    }
+
+    function memOutcome(plateId) {
+        var m = S.mem;
+        if (m.remembered && plateId === m.clue) {
+            S.pip.doorOpen = true;
+            S.pip.done = true;
+            setNote(tr('<strong>Click!</strong> Pip remembered the scroll and chose the right plate. The door is open, Hero, go!'), 'good', 8000);
+            maybeShowLesson('numctx');
+            return;
+        }
+        if (plateId === m.clue) {
+            setNote(tr('<strong>A lucky guess.</strong> It was the right plate, but Pip had forgotten the scroll, so it does not count. Pip is starting again.'), 'bad', 7000);
+        } else {
+            setNote(tr('<strong>Wrong plate.</strong> Pip had forgotten the scroll and guessed. It is starting again.'), 'bad', 7000);
+        }
+        S.pipWait = 2200;
+    }
+
+    function memTick() {
+        var room = S.room;
+        var route = room.memory.route;
+        if (!S.mem) { memStart(); }
+        var m = S.mem;
+        if (!ctxFits()) {
+            // not enough memory to load the model at this context length: Pip cannot move
+            if (m.oomFor !== S.ctx) {
+                m.oomFor = S.ctx;
+                setNote(tr('<strong>Out of memory.</strong> A context of {ctx} tokens needs {need} GB, but this machine has {budget} GB. Pip cannot load. Choose a shorter context.', { ctx: S.ctx, need: ctxNeed().toFixed(2), budget: room.memory.budget }), 'bad', 9000);
+            }
+            return;
+        }
+        var res = L.pipStep(room, S.pip, S.T, Math.random, S.hero, memTarget());
+        S.steps++;
+        S.roomSteps++;
+        m.steps++;
+        pushTrail(S.pip.x, S.pip.y);
+        logChoice(res);
+        if (res.bumped) { S.bumpT = 240; S.bumpDir = res.dir; }
+        if (!m.decided) {
+            var w = route[m.wp];
+            if (S.pip.x === w[0] && S.pip.y === w[1]) { m.wp++; }
+            if (m.wp >= route.length) { memDecide(); }
+        } else if (res.tile && PLATE_ID[res.tile] !== undefined) {
+            memOutcome(PLATE_ID[res.tile]);
+        }
+    }
+
+    function updateCtxPanel() {
+        if (!S.room || !S.room.memory) { return; }
+        var m = S.mem;
+        var need = ctxNeed();
+        var budget = S.room.memory.budget;
+        var over = need > budget;
+        var state;
+        if (over) { state = tr('Out of memory: {need} GB needed, {budget} GB available.', { need: need.toFixed(2), budget: budget }); }
+        else if (!m) { state = ''; }
+        else if (!m.decided) { state = tr('Steps since the scroll: {n} of {ctx} tokens', { n: m.steps, ctx: S.ctx }); }
+        else { state = m.remembered ? tr('Pip remembered the scroll.') : tr('The scroll fell out of the window.'); }
+        var key = S.ctx + '|' + state + '|' + over;
+        if (el.ctxState.dataset.cur === key) { return; }
+        el.ctxState.dataset.cur = key;
+        el.ctxValue.textContent = tr('{n} tokens', { n: S.ctx });
+        el.ctxFill.style.width = Math.min(100, Math.round(need / budget * 100)) + '%';
+        el.ctxFill.className = 'w-fill ' + (over ? 'neg' : 'pos');
+        el.ctxVram.textContent = tr('Memory: {used} GB of {budget} GB', { used: need.toFixed(2), budget: budget });
+        el.ctxState.textContent = state;
+        el.ctxState.className = 'ctx-state' + (over ? ' bad' : (m && m.decided ? (m.remembered ? ' good' : ' bad') : ''));
+    }
+
+    /* ------------------------------------------------------------------ */
     /* Rooms                                                               */
     /* ------------------------------------------------------------------ */
     function loadRoom(index, skipIntro) {
@@ -610,12 +780,16 @@
         el.objective.textContent = S.room.objective;
         el.floorLabel.textContent = S.dungeon.title + ' · ' + S.dungeon.unit + ' ' + (index + 1) + '/' + rooms.length + ' · ' + S.room.title; // all already translated
         S.noteUntil = 0;
+        S.mem = null;
+        el.panelCtx.hidden = !S.room.memory;
+        if (S.room.memory) { memStart(); }
         if (skipIntro) {
             S.mode = 'play';
+            if (S.room.memory) { memAnnounce(); }
             return;
         }
         var pages = STORY[S.room.id];
-        showOverlay({ title: S.room.title, pages: pages, button: 'Go' });
+        showOverlay({ title: S.room.title, pages: pages, button: 'Go', onDone: function () { if (S.room && S.room.memory) { memAnnounce(); } } });
     }
 
     function faint() {
@@ -727,6 +901,7 @@
     /* Pip step                                                            */
     /* ------------------------------------------------------------------ */
     function pipTick() {
+        if (S.room.memory) { memTick(); return; }
         var res = L.pipStep(S.room, S.pip, S.T, Math.random, S.hero);
         S.steps++;
         S.roomSteps++;
@@ -783,6 +958,7 @@
         var r = S.room;
         if (r.door) { drawDoor(r.door.x, r.door.y, S.pip.doorOpen); }
         if (r.plate) { drawPlate(r.plate.x, r.plate.y, S.pip.doorOpen || S.pipWait > 0, S.time); }
+        if (r.memory) { drawMemoryProps(r); }
         if (r.chest) {
             ctx.drawImage(sprite.chest, r.chest.x * TILE, r.chest.y * TILE);
             if (Math.floor(S.time / 400) % 2) {
@@ -844,8 +1020,9 @@
                 if (S.pipWait <= 0) { S.pipWait = 0; resetPipRun(); }
             } else if (!S.pip.done) {
                 S.acc += dt;
-                while (S.acc >= STEP_MS && S.mode === 'play' && !S.pip.done && S.pipWait <= 0) {
-                    S.acc -= STEP_MS;
+                var stepMs = S.room.memory ? STEP_MS_MEMORY : STEP_MS;
+                while (S.acc >= stepMs && S.mode === 'play' && !S.pip.done && S.pipWait <= 0) {
+                    S.acc -= stepMs;
                     pipTick();
                 }
             }
@@ -896,6 +1073,12 @@
         } else if (forge && (e.key === 'e' || e.key === 'E' || e.key === ']')) {
             e.preventDefault();
             setTemp(S.T + 0.1);
+        } else if (forge && S.room && S.room.memory && (e.key === 'z' || e.key === 'Z')) {
+            e.preventDefault();
+            setCtx(CTX[Math.max(0, CTX.indexOf(S.ctx) - 1)]);
+        } else if (forge && S.room && S.room.memory && (e.key === 'c' || e.key === 'C')) {
+            e.preventDefault();
+            setCtx(CTX[Math.min(CTX.length - 1, CTX.indexOf(S.ctx) + 1)]);
         } else if (e.key === 'r' || e.key === 'R') {
             e.preventDefault();
             loadRoom(S.roomIndex, true);
@@ -907,6 +1090,10 @@
     el.temp.addEventListener('change', function () { el.temp.blur(); });
     el.tDown.addEventListener('click', function () { setTemp(S.T - 0.1); el.tDown.blur(); });
     el.tUp.addEventListener('click', function () { setTemp(S.T + 0.1); el.tUp.blur(); });
+    el.ctxSlider.addEventListener('input', function () { setCtx(CTX[parseInt(el.ctxSlider.value, 10)]); });
+    el.ctxSlider.addEventListener('change', function () { el.ctxSlider.blur(); });
+    el.ctxDown.addEventListener('click', function () { setCtx(CTX[Math.max(0, CTX.indexOf(S.ctx) - 1)]); el.ctxDown.blur(); });
+    el.ctxUp.addEventListener('click', function () { setCtx(CTX[Math.min(CTX.length - 1, CTX.indexOf(S.ctx) + 1)]); el.ctxUp.blur(); });
 
     Array.prototype.forEach.call(document.querySelectorAll('.dpad button'), function (b) {
         b.addEventListener('click', function () {
@@ -1190,6 +1377,7 @@
     });
     buildBars();
     setTemp(0.0);
+    setCtx(8, true);
     showHub();
     requestAnimationFrame(frame);
 })();

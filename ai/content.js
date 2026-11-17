@@ -130,15 +130,16 @@
             intro: [
                 ['Welcome to the <b>Forge</b>. Local models are tuned with a <b>modelfile</b>: a small config that sets how a model behaves.',
                     'Pip is a tiny model in a small pixel body. You steer the Hero, but Pip decides its <i>own</i> moves, and you control <b>how</b> it decides.',
-                    'This bonus dungeon teaches one dial: <b>temperature</b>.']
+                    'This bonus dungeon teaches two dials: <b>temperature</b> and the <b>context length</b> (num_ctx).']
             ],
             introButton: 'Enter the Forge',
             clearTitle: 'The Forge cleared!',
             clear: [
-                ['<b>Loot: the Temperature Dial.</b> Yours to keep.',
+                ['<b>Loot: the Temperature Dial and the Context Dial.</b> Yours to keep.',
                     'Low temperature gives focused, repeatable output: good for facts, code and precision. High temperature gives varied, exploratory output: good for ideas and stories, but riskier.',
-                    'Real models work the same way: temperature rescales the odds of every possible next token.'],
-                ['<span class="tip">More dials are coming: <b>num_ctx</b> (how much Pip can remember) and the system prompt.</span>']
+                    'Real models work the same way: temperature rescales the odds of every possible next token.',
+                    '<b>Context length</b> (num_ctx) is how many tokens a model can hold in mind. A longer window remembers more but needs more memory, so pick the smallest one that covers the task.'],
+                ['<span class="tip">One more dial is coming: the <b>system prompt</b>, which sets Pip\'s role and rules.</span>']
             ],
             clearButton: 'Back to the dungeons'
         }
@@ -244,6 +245,16 @@
                 'Too cold and Pip is stuck. Too hot and it stumbles onto spikes.',
                 '<span class="tip">You can change the dial at any time, even mid-run. Find the sweet spot.</span>']
         ],
+        scroll: [
+            ['This scroll names the right plate: red, blue or green. Pip reads it, then has to walk a long way before it chooses.',
+                'A model only remembers what is inside its <b>context window</b>, measured in tokens. In a modelfile you set it with <b>num_ctx</b>. Every step Pip takes is a token, and once the scroll is further back than the window, it is forgotten.',
+                'A bigger window remembers more but needs more memory. Find a setting that is long enough and still fits.',
+                '<span class="tip">Use Z / C or the slider to change num_ctx. Keep the temperature low: a wandering Pip takes more steps.</span>']
+        ],
+        longscroll: [
+            ['The same scroll, but a much longer walk. The setting that worked before may not be enough any more.',
+                '<span class="tip">The largest window will not fit in this machine\'s memory. What is the smallest one that works?</span>']
+        ],
         treasure: [
             ['A quiet room with a chest. Pip tries to follow you, but at higher temperatures it wanders off.',
                 '<span class="tip">Try different temperatures while you walk to the chest.</span>']
@@ -251,6 +262,11 @@
     };
 
     var LESSONS = {
+        numctx: [
+            '<b>Name it:</b> <i>num_ctx</i>, the context length: how many tokens a model can hold in mind at once. In an Ollama modelfile it is a single line such as <i>PARAMETER num_ctx 8192</i>.',
+            '<b>In the real world:</b> anything beyond the window is simply not seen, so long chats and big documents get cut off. A larger window needs more memory because the KV cache grows with it, so on a small GPU you may have to choose between a bigger model and a longer memory.',
+            '<b>Use it:</b> set num_ctx to what the task needs, not to the maximum. Check what it costs in memory, and remember that a more random, wandering model uses more tokens to do the same job.'
+        ],
         hallucination: [
             '<b>Name it:</b> <i>hallucination</i>: a model produces fluent, confident text that is false, such as invented facts, citations or numbers. It is a side effect of predicting likely text.',
             '<b>In the real world:</b> the tone of an answer says nothing about its accuracy. Risk is highest for specific details: citations, quotes, precise figures, your own private data, recent events and niche facts.',
@@ -395,6 +411,7 @@
         agentloop:  { dungeon: 'agentic', title: 'The agent loop',        where: 'The Agent Loop',       line: 'The model proposes. The harness runs the tool, remembers the result and enforces the limits.' },
         guards:     { dungeon: 'agentic', title: 'Agent guardrails',       where: 'The Runaway',          line: 'Layer step caps, loop detection and spending controls, and size them for real work.' },
         autonomy:   { dungeon: 'agentic', title: 'Levels of autonomy',     where: 'The Autonomy Gate',    line: 'Automatic for the safe and reversible, a human for the hard to undo, never for the catastrophic.' },
+        numctx:     { dungeon: 'forge',  title: 'Context length (num_ctx)', where: 'The Scroll Room',     line: 'A longer window remembers more but costs more memory. Pick the smallest that covers the task.' },
         contrast:   { dungeon: 'forge',  title: 'Temperature',               where: 'The Wander Test',      line: 'Low is repeatable, high is varied. Choose by the task.' },
         sampling:   { dungeon: 'forge',  title: 'Sampling',                  where: 'The Hall of Repeats',  line: 'Models sample from odds, so unlikely outcomes sometimes happen at higher temperature.' },
         stuck:      { dungeon: 'forge',  title: 'Greedy decoding',           where: 'The Garden of Wonders', line: 'At temperature 0 a model can loop. A little randomness lets it explore.' }
