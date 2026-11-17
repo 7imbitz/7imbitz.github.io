@@ -599,6 +599,22 @@ button.trim-row { display: flex; justify-content: space-between; gap: 0.8em; tex
 button.trim-row.on { border-color: var(--green); }
 button.trim-row.off { opacity: 0.5; text-decoration: line-through; }
 
+/* Trust Issues */
+.ledger { display: grid; gap: 0.5em; margin: 0.4em 0; }
+.ledger-row { display: grid; gap: 0.4em; }
+.ledger-tags { display: flex; gap: 0.35em; flex-wrap: wrap; }
+.chip-tag { background: #2a2250; color: var(--cyan); border: 1px solid var(--panel-border); }
+.chip-stakes-high { background: var(--red); color: #fff; }
+.chip-stakes-medium { background: var(--accent); }
+.chip-stakes-low { background: var(--green); }
+.ledger-row button.on { background: var(--cyan); color: #14101f; border-color: var(--cyan); }
+.ledger-row button.on:hover:not(:disabled) { background: #79dcf6; }
+.doc-list { display: grid; gap: 0.4em; margin: 0.4em 0; }
+button.doc { display: grid; gap: 0.15em; text-align: left; white-space: normal; padding: 0.45em 0.7em; }
+.doc-name { font-weight: bold; }
+.q.maybe { border-color: var(--accent); }
+.q.maybe .q-why { color: var(--accent); }
+
 /* HUD variant for dungeons without Pip */
 .hud.solo { grid-template-columns: 1fr; }
 [hidden] { display: none !important; }

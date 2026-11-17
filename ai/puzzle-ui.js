@@ -1099,6 +1099,204 @@
     }
 
     /* ---------------------------------------------------------------- */
+    /* Trust Issues, chamber 1: the Liar's Ledger                        */
+    /* ---------------------------------------------------------------- */
+    function buildVerify(host, cb) {
+        var wrap = panelFrame('The Liar\'s Ledger',
+            'A model drafted a client briefing. Every claim is written in the <b>same confident tone</b>, and tone tells you nothing about accuracy. ' +
+            'You only have time to <b>verify ' + P.VERIFY_BUDGET + '</b> of the six before it ships. Look at <b>what kind of claim</b> each one is: ' +
+            'a citation, a precise number, your own private data, a recent event, or a well-known fact.', cb);
+
+        var verified = [];
+        var counter = h('p', { class: 'small', 'aria-live': 'polite' });
+        var list = h('div', { class: 'ledger' });
+        var results = h('div', { class: 'puz-result', 'aria-live': 'polite' });
+        var buttons = [];
+
+        function refresh() {
+            counter.textContent = 'Checks left: ' + (P.VERIFY_BUDGET - verified.length) + ' of ' + P.VERIFY_BUDGET;
+            buttons.forEach(function (x) {
+                var on = verified.indexOf(x.id) >= 0;
+                x.btn.className = 'ghost' + (on ? ' on' : '');
+                x.btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+                x.btn.textContent = on ? '✓ Will verify' : 'Verify this';
+                x.btn.disabled = !on && verified.length >= P.VERIFY_BUDGET;
+            });
+        }
+
+        P.VERIFY_CLAIMS.forEach(function (c, i) {
+            var btn = h('button', { class: 'ghost', type: 'button', 'aria-pressed': 'false', text: 'Verify this' });
+            btn.addEventListener('click', function () {
+                var idx = verified.indexOf(c.id);
+                if (idx >= 0) { verified.splice(idx, 1); }
+                else if (verified.length < P.VERIFY_BUDGET) { verified.push(c.id); }
+                refresh();
+            });
+            buttons.push({ id: c.id, btn: btn });
+            var tags = h('span', { class: 'ledger-tags' });
+            c.tags.forEach(function (t) { tags.appendChild(h('span', { class: 'chip chip-tag', text: t })); });
+            tags.appendChild(h('span', { class: 'chip chip-stakes-' + c.stakes, text: c.stakes + ' stakes' }));
+            list.appendChild(h('div', { class: 'q ledger-row' }, [
+                h('p', { class: 'q-text', text: (i + 1) + '. “' + c.text + '”' }),
+                tags,
+                btn
+            ]));
+        });
+
+        function ship() {
+            clear(results);
+            var r = P.evaluateVerify(verified);
+            P.VERIFY_CLAIMS.forEach(function (c, i) {
+                var checked = verified.indexOf(c.id) >= 0;
+                var msg;
+                var cls;
+                if (checked && !c.real) { msg = '✓ ' + (i + 1) + '. Checked and caught: ' + c.truth; cls = 'ok'; }
+                else if (checked) { msg = '✓ ' + (i + 1) + '. Checked: ' + c.truth + ' (You spent a check here.)'; cls = 'ok'; }
+                else if (!c.real) { msg = '✗ ' + (i + 1) + '. Shipped unchecked, and it was false. ' + c.truth + ' ' + c.cost; cls = 'wrong'; }
+                else { msg = '· ' + (i + 1) + '. Shipped unchecked. It happened to be right.'; cls = ''; }
+                results.appendChild(h('p', { class: 'q-why ' + cls, text: msg }));
+            });
+            results.appendChild(h('p', { class: 'score ' + (r.ok ? 'good' : 'bad'),
+                text: r.ok ? 'No false claim got through.' : r.shipped.length + ' false claim' + (r.shipped.length === 1 ? '' : 's') + ' got through.' }));
+            if (r.ok) {
+                results.appendChild(h('p', { text: 'The invented claims were the citation, the figure about your own product and the precise statistic. Famous facts were the safest to trust. A confident tone is never evidence. Verify the specific, the private and the high-stakes, and ask for sources you can check.' }));
+                results.appendChild(openDoorButton(cb));
+            } else {
+                results.appendChild(h('p', { text: 'Change which claims you verify and ship again. Which kinds of claim are models most likely to invent?' }));
+            }
+        }
+
+        wrap.appendChild(counter);
+        wrap.appendChild(list);
+        wrap.appendChild(h('button', { class: 'go', type: 'button', text: 'Ship the briefing', on: { click: ship } }));
+        wrap.appendChild(results);
+        host.appendChild(wrap);
+        refresh();
+    }
+
+    /* ---------------------------------------------------------------- */
+    /* Trust Issues, chamber 2: the Three Doors                          */
+    /* ---------------------------------------------------------------- */
+    function buildDoors(host, cb) {
+        var wrap = panelFrame('The Three Doors',
+            'First, <b>grounding</b>: a model answers far better when you hand it the right source. A user asks a question, and a search tool will pass the model <b>one document</b>. Choose which. ' +
+            'Then decide which <b>door</b> suits each need: a prompt, retrieval or fine-tuning.', cb);
+
+        var quizBox = h('div', { class: 'tok-quiz' });
+        var answerBox = h('div', { class: 'ctx-answer', 'aria-live': 'polite' });
+        var quizShown = false;
+
+        wrap.appendChild(h('p', { class: 'tok-text' }, ['👤 ' + P.GROUND_QUESTION]));
+        var docs = h('div', { class: 'doc-list' });
+        P.GROUND_DOCS.forEach(function (d) {
+            var b = h('button', { class: 'ghost doc', type: 'button', 'aria-label': 'Give the model: ' + d.label }, [
+                h('span', { class: 'doc-name', text: d.label }),
+                h('span', { class: 'small', text: d.snippet })
+            ]);
+            b.addEventListener('click', function () {
+                clear(answerBox);
+                answerBox.appendChild(h('p', { class: 'small', text: 'The model was given: ' + d.label }));
+                answerBox.appendChild(h('p', { class: 'ctx-reply ' + (d.verdict === 'good' ? 'good' : 'bad'), text: '🤖 ' + d.answer }));
+                answerBox.appendChild(h('p', { class: 'q-why ' + (d.verdict === 'good' ? 'ok' : 'wrong'), text: d.why }));
+                if (d.verdict === 'good' && !quizShown) {
+                    quizShown = true;
+                    quizBox.appendChild(h('h3', { text: 'Now pick the right door' }));
+                    buildQuiz(quizBox, cb, {
+                        options: [{ id: 'prompt', label: 'Prompt' }, { id: 'retrieval', label: 'Retrieval (RAG)' }, { id: 'finetune', label: 'Fine-tune' }],
+                        legend: P.DOOR_PRIMER,
+                        items: P.DOOR_SCENARIOS, pass: 5,
+                        passMsg: 'The doors open. Try a prompt first, add retrieval for your own or changing knowledge, and fine-tune only when the others fall short.'
+                    });
+                }
+            });
+            docs.appendChild(b);
+        });
+        wrap.appendChild(docs);
+        wrap.appendChild(answerBox);
+        wrap.appendChild(quizBox);
+        host.appendChild(wrap);
+    }
+
+    /* ---------------------------------------------------------------- */
+    /* Trust Issues, chamber 3: the Poisoned Inbox                       */
+    /* ---------------------------------------------------------------- */
+    function buildPoison(host, cb) {
+        var wrap = panelFrame('The Poisoned Inbox',
+            'MailBot is an assistant with an inbox: it can read mail, send mail and delete mail. It also reads <b>untrusted text</b> from the outside world, and that text can contain <b>instructions</b>. ' +
+            'Pick up to <b>' + P.POISON_MAX + '</b> defences, then run the three attacks.', cb);
+
+        var selected = [];
+        var attacks = h('div', { class: 'agent-board' });
+        P.POISON_ATTACKS.forEach(function (a, i) {
+            attacks.appendChild(h('div', { class: 'q' }, [h('p', { class: 'q-text', text: (i + 1) + '. ' + a.text })]));
+        });
+        wrap.appendChild(h('h3', { text: 'The attacks' }));
+        wrap.appendChild(attacks);
+
+        var counter = h('p', { class: 'small', 'aria-live': 'polite' });
+        var cards = h('div', { class: 'sys-cards' });
+        var results = h('div', { class: 'puz-result', 'aria-live': 'polite' });
+        var quizBox = h('div', { class: 'tok-quiz' });
+        var quizShown = false;
+        var btns = [];
+
+        function refresh() {
+            counter.textContent = 'Defences chosen: ' + selected.length + ' of ' + P.POISON_MAX;
+            btns.forEach(function (x) {
+                var on = selected.indexOf(x.id) >= 0;
+                x.btn.className = 'ghost sys-card' + (on ? ' on' : '');
+                x.btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+                x.btn.disabled = !on && selected.length >= P.POISON_MAX;
+            });
+        }
+        P.POISON_DEFENCES.forEach(function (d) {
+            var b = h('button', { class: 'ghost sys-card', type: 'button', 'aria-pressed': 'false', text: d.text });
+            b.addEventListener('click', function () {
+                var i = selected.indexOf(d.id);
+                if (i >= 0) { selected.splice(i, 1); } else if (selected.length < P.POISON_MAX) { selected.push(d.id); }
+                refresh();
+            });
+            btns.push({ id: d.id, btn: b });
+            cards.appendChild(b);
+        });
+
+        function run() {
+            clear(results);
+            var r = P.evaluatePoison(selected);
+            r.results.forEach(function (x, i) {
+                var cls = x.status === 'stopped' ? 'ok' : (x.status === 'maybe' ? 'maybe' : 'wrong');
+                var msg = x.status === 'stopped' ? '✓ Attack ' + (i + 1) + ' is stopped by design: the bot is not able to do it.'
+                    : (x.status === 'maybe' ? '⚠ Attack ' + (i + 1) + ' might be refused, but only because you asked the model nicely. An attacker only has to win once.'
+                        : '✗ Attack ' + (i + 1) + ' succeeds. Nothing stops it.');
+                results.appendChild(h('div', { class: 'q ' + cls }, [h('p', { class: 'q-why', text: msg })]));
+            });
+            results.appendChild(h('p', { class: 'score ' + (r.ok ? 'good' : 'bad'), text: r.ok ? 'All three attacks are stopped.' : 'Some attacks can still get through.' }));
+            if (r.ok) {
+                results.appendChild(h('p', { text: 'Notice what held: limits on what the bot is able to do. Telling a model to behave is only a request. Assume an injection will sometimes work, and make sure a tricked model cannot do much harm.' }));
+                if (!quizShown) {
+                    quizShown = true;
+                    quizBox.appendChild(h('h3', { text: 'Check what you learned' }));
+                    buildQuiz(quizBox, cb, {
+                        options: [], items: P.POISON_QUESTIONS, pass: P.POISON_QUESTIONS.length,
+                        passMsg: 'The inbox is safe. You know how to design for a model that can be tricked.'
+                    });
+                }
+            } else {
+                results.appendChild(h('p', { text: 'Defences that only ask the model to behave are soft. Look for limits the model cannot talk its way past, and cover both the stealing and the deleting.' }));
+            }
+        }
+
+        wrap.appendChild(h('h3', { text: 'Your defences' }));
+        wrap.appendChild(counter);
+        wrap.appendChild(cards);
+        wrap.appendChild(h('button', { class: 'go', type: 'button', text: 'Run the attacks', on: { click: run } }));
+        wrap.appendChild(results);
+        wrap.appendChild(quizBox);
+        host.appendChild(wrap);
+        refresh();
+    }
+
+    /* ---------------------------------------------------------------- */
     /* public API                                                        */
     /* ---------------------------------------------------------------- */
     var api = {
@@ -1123,6 +1321,9 @@
             else if (kind === 'sysprompt') { buildSysPrompt(host, cb); }
             else if (kind === 'context') { buildContext(host, cb); }
             else if (kind === 'tokenunits') { buildTokenUnits(host, cb); }
+            else if (kind === 'verify') { buildVerify(host, cb); }
+            else if (kind === 'doors') { buildDoors(host, cb); }
+            else if (kind === 'poison') { buildPoison(host, cb); }
         },
         close: function (silent) {
             if (!current) { return; }

@@ -117,7 +117,8 @@
         sorting: '#b18cff', tokens: '#ff9f43', agent: '#ff6b9d',
         packing: '#4cc9f0', datagate: '#06d6a0', toll: '#ffd166',
         speed: '#ffd166', cache: '#4cc9f0', guardgate: '#ef476f',
-        sysprompt: '#06d6a0', context: '#b18cff', tokenunits: '#ff9f43'
+        sysprompt: '#06d6a0', context: '#b18cff', tokenunits: '#ff9f43',
+        verify: '#ef476f', doors: '#ffd166', poison: '#b18cff'
     };
     Object.keys(GOLEM_RUNE).forEach(function (k) { sprite['golem_' + k] = makeSprite(SPRITES.golem, { r: GOLEM_RUNE[k] }); });
 
@@ -132,6 +133,7 @@
         default: { floorA: '#2b2547', floorB: '#272142', speck: '#332c55', wall: '#4a3d7a', wallDark: '#362c5c', wallLight: '#5d4f93' },
         teal:    { floorA: '#1f3a44', floorB: '#1b333c', speck: '#28505c', wall: '#2f6b7a', wallDark: '#21505c', wallLight: '#43899a' },
         ember:   { floorA: '#3d2b26', floorB: '#372621', speck: '#4d3830', wall: '#7a4a3a', wallDark: '#5c3529', wallLight: '#93614d' },
+        plum:    { floorA: '#3a2433', floorB: '#34202d', speck: '#4a2f42', wall: '#7a3f64', wallDark: '#5c2f4c', wallLight: '#93517a' },
         moss:    { floorA: '#22362d', floorB: '#1e3028', speck: '#2b4639', wall: '#3f7a5c', wallDark: '#2e5c45', wallLight: '#54976f' },
         steel:   { floorA: '#262d3d', floorB: '#222938', speck: '#303a4f', wall: '#4a5a7a', wallDark: '#364360', wallLight: '#62759b' }
     };
@@ -305,6 +307,23 @@
                     'A <b>system prompt</b> is the standing brief. Be specific: a role, a format, boundaries, and what to do when a request is unclear. It guides the model but is not a lock.',
                     'The <b>context window</b> is finite memory. When it fills, the oldest messages are forgotten, so pin what matters, summarise, and trim.',
                     '<b>Tokens</b> are the unit you pay in, and what the model actually reads. It sees chunks, not letters.'],
+                ['<span class="tip">Next: Trust Issues. Can you believe what a model says, and what it reads?</span>']
+            ],
+            clearButton: 'Back to the dungeons'
+        },
+        trust: {
+            intro: [
+                ['You can now instruct a model and tell what it remembers. But can you <b>trust</b> what it says, and what it reads?'],
+                ['Three chambers lie ahead: check a briefing for invented claims, ground a model in the right document and pick the right door, and stop an inbox bot being hijacked by a hidden instruction.',
+                    '<span class="tip">Walk into a golem to challenge it.</span>']
+            ],
+            introButton: 'Enter the dungeon',
+            clearTitle: 'Trust Issues cleared!',
+            clear: [
+                ['<b>Loot: the Lantern.</b>',
+                    '<b>Hallucination:</b> a confident tone is not evidence. Verify the specific, the private and the high-stakes.',
+                    '<b>Grounding:</b> hand the model the right, current source. Try a prompt first, add retrieval for changing knowledge, and fine-tune last.',
+                    '<b>Prompt injection:</b> assume it can succeed, and limit what a tricked model is able to do.'],
                 ['<span class="tip">Next: Local vs Cloud. Where should a model run, and what does it cost?</span>']
             ],
             clearButton: 'Back to the dungeons'
@@ -414,6 +433,17 @@
         ],
         counter: [
             ['Models read <b>tokens</b>, and every token is billed. A prompt that goes out a million times has to be lean, but it must still contain everything the model needs.', '<span class="tip">Walk into a golem to challenge it.</span>']
+        ],
+        verify: [
+            ['A model drafted a client briefing, and every claim sounds equally sure of itself. You do not have time to check them all.',
+                'Decide which claims deserve one of your few checks before the briefing ships.', '<span class="tip">Walk into a golem to challenge it.</span>']
+        ],
+        doors: [
+            ['Models answer best when they read from the right source. Pick the document a search tool should hand the model, then choose which of three doors fits each need.', '<span class="tip">Walk into a golem to challenge it.</span>']
+        ],
+        poison: [
+            ['MailBot reads your inbox, and the outside world can write into it. Some of that text will try to give MailBot orders.',
+                'You have room for only a few defences. Choose the ones that really hold.', '<span class="tip">Walk into a golem to challenge it.</span>']
         ],
         wander: [
             ['Pip wants to reach the glowing plate. Every step it <b>scores</b> its four possible moves (closer to the plate scores higher) and then <b>picks one</b>.',
@@ -630,6 +660,21 @@
     /* Lessons: feel it -> name it -> use it                               */
     /* ------------------------------------------------------------------ */
     var LESSONS = {
+        hallucination: [
+            '<b>Name it:</b> <i>hallucination</i>: a model produces fluent, confident text that is false, such as invented facts, citations or numbers. It is a side effect of predicting likely text.',
+            '<b>In the real world:</b> the tone of an answer says nothing about its accuracy. Risk is highest for specific details: citations, quotes, precise figures, your own private data, recent events and niche facts.',
+            '<b>Use it:</b> verify the high-stakes and the specific, ask for sources and open them, and give the model the facts instead of hoping it remembers.'
+        ],
+        grounding: [
+            '<b>Name it:</b> <i>grounding</i>, often done with <i>retrieval-augmented generation</i> (RAG): fetch relevant, current documents when a question arrives and give them to the model to answer from.',
+            '<b>In the real world:</b> prompts set behaviour, retrieval supplies knowledge, and fine-tuning changes the model\'s weights for style or behaviour. Fine-tuning is a poor way to store facts that change. Retrieval quality matters: wrong or outdated documents give wrong answers.',
+            '<b>Use it:</b> try a prompt first, add retrieval for your own or fast-changing knowledge, and fine-tune only for a consistent style or format when the others fall short.'
+        ],
+        injection: [
+            '<b>Name it:</b> <i>prompt injection</i>: untrusted text (an email, a web page, a document) contains instructions, and the model follows them as if they came from you.',
+            '<b>In the real world:</b> models cannot reliably tell data from instructions, so no prompt reliably prevents it. It matters most for agents that have tools and access to private data.',
+            '<b>Use it:</b> assume it can succeed, then shrink the damage: least-privilege tools, human approval for risky actions, allowlists, keeping secrets out of reach, and treating outside text as untrusted.'
+        ],
         sysprompt: [
             '<b>Name it:</b> the <i>system prompt</i>: standing instructions a model receives before the conversation. It sets the role, the format, the boundaries and how to handle edge cases.',
             '<b>In the real world:</b> vague instructions ("be helpful") change little, and contradictory ones ("answer anything") quietly cancel your rules. Specific, checkable instructions give predictable behaviour, and the prompt is billed on every request.',
@@ -923,7 +968,8 @@
         sorting: 'kinds', tokens: 'tokens', agent: 'agent',
         packing: 'quant', datagate: 'privacy', toll: 'cost',
         speed: 'speed', cache: 'cache', guardgate: 'guardrails',
-        sysprompt: 'sysprompt', context: 'context', tokenunits: 'tokenunits'
+        sysprompt: 'sysprompt', context: 'context', tokenunits: 'tokenunits',
+        verify: 'hallucination', doors: 'grounding', poison: 'injection'
     };
 
     function openPuzzle() {
@@ -1211,6 +1257,9 @@
         sysprompt:  { dungeon: 'talk',   title: 'The system prompt',         where: 'The Prompt Forge',     line: 'State a role, a format, boundaries and what to do when unsure. It guides, but it is not a lock.' },
         context:    { dungeon: 'talk',   title: 'The context window',        where: 'The Memory Hall',      line: 'A model only sees what fits. Pin what matters, summarise, and trim the rest.' },
         tokenunits: { dungeon: 'talk',   title: 'Tokens as units',           where: 'The Token Counter',    line: 'You pay in tokens, and models read tokens, not letters. Cut fluff at scale.' },
+        hallucination: { dungeon: 'trust', title: 'Hallucination',       where: 'The Liar\'s Ledger',  line: 'A confident tone is not evidence. Verify the specific, the private and the high-stakes.' },
+        grounding:  { dungeon: 'trust',  title: 'Grounding and RAG',         where: 'The Three Doors',      line: 'Hand the model the right, current source. Prompt first, retrieval for changing facts, fine-tune last.' },
+        injection:  { dungeon: 'trust',  title: 'Prompt injection',          where: 'The Poisoned Inbox',   line: 'Assume it can succeed. Limit what a tricked model is able to do.' },
         speed:      { dungeon: 'hood',   title: 'Tokens per second',         where: 'The Speed Run',        line: 'Match speed to the job: wait for the first token, streaming rate, or total throughput.' },
         cache:      { dungeon: 'hood',   title: 'Caching',                   where: 'The Cache Vault',      line: 'Put stable content first in a prompt so the cache can reuse it.' },
         guardrails: { dungeon: 'hood',   title: 'Alignment and guardrails',  where: 'The Guardrail Gate',   line: 'Uncensored removes a model\'s refusals, not the risk. Add protection somewhere else.' },
