@@ -88,7 +88,7 @@
                 ['<b>Loot: the Modelfile Anvil.</b> You know where models can run and what that costs.',
                     '<b>Local:</b> private, works offline and has a fixed cost, but is limited by your hardware. Quantization lets bigger models fit.',
                     '<b>Cloud:</b> the strongest models and no hardware to manage, but you pay per use and your data leaves your machine.'],
-                ['<span class="tip">The bonus dungeons are now open: <b>Under the Hood</b> (speed, caches, uncensored models) and <b>The Forge</b> (tweak Pip like a modelfile). The <b>Grimoire</b> on the hub keeps every idea you have learned.</span>']
+                ['<span class="tip">The bonus dungeons are now open: <b>Under the Hood</b> (speed, caches, uncensored models), <b>Agentic AI</b> (loops, limits, permissions) and <b>The Forge</b> (tweak Pip like a modelfile). The <b>Grimoire</b> on the hub keeps every idea you have learned.</span>']
             ],
             clearButton: 'Back to the dungeons'
         },
@@ -105,6 +105,23 @@
                     '<b>Speed</b> is tokens per second plus time to first token. Model size, quantization and hardware decide it.',
                     '<b>Caches</b> reuse earlier work: the KV cache lives inside the model, and prompt caching reuses an identical prefix. Put stable content first.',
                     '<b>Uncensored</b> means fewer refusals, not more intelligence. It moves the safety job from the model to you.'],
+                ['<span class="tip">Try the Forge next. Local models are tuned with a <b>modelfile</b>: temperature, context length (num_ctx) and more.</span>']
+            ],
+            clearButton: 'Back to the dungeons'
+        },
+        agentic: {
+            intro: [
+                ['You have met agents: a model with tools. Now see what it takes to run one <b>safely</b>.'],
+                ['Three chambers lie ahead: the loop every agent runs on, the limits that stop it running away, and how much freedom to give it.',
+                    '<span class="tip">Walk into a golem to challenge it.</span>']
+            ],
+            introButton: 'Enter the dungeon',
+            clearTitle: 'Agentic AI cleared!',
+            clear: [
+                ['<b>Loot: the Leash.</b>',
+                    '<b>The loop:</b> the harness feeds the model, the model proposes an action, the harness checks and runs it, and the result goes back into the history. The model only proposes.',
+                    '<b>Limits:</b> step caps, loop detection and spending controls each catch different failures, so layer them and size them for real work.',
+                    '<b>Autonomy:</b> let agents act alone only on low-risk, reversible actions. Ask a human for the hard to undo, and never hand over the catastrophic.'],
                 ['<span class="tip">Try the Forge next. Local models are tuned with a <b>modelfile</b>: temperature, context length (num_ctx) and more.</span>']
             ],
             clearButton: 'Back to the dungeons'
@@ -192,6 +209,18 @@
         poison: [
             ['MailBot reads your inbox, and the outside world can write into it. Some of that text will try to give MailBot orders.',
                 'You have room for only a few defences. Choose the ones that really hold.', '<span class="tip">Walk into a golem to challenge it.</span>']
+        ],
+        loop: [
+            ['Every agent, from a coding assistant to a research bot, runs the same cycle again and again. The model on its own never does anything: it only <b>proposes</b> the next action.',
+                'Put the five steps of the <b>agent loop</b> in order, then say who does what: the model or the harness.', '<span class="tip">Walk into a golem to challenge it.</span>']
+        ],
+        runaway: [
+            ['Four agents are about to go wrong: one repeats itself, one is doing real work, one tries a big purchase, and one wanders aimlessly.',
+                'Set the limits in the harness so that every runaway is stopped, but the genuine task is allowed to finish.', '<span class="tip">Walk into a golem to challenge it.</span>']
+        ],
+        autonomygate: [
+            ['How much freedom should an agent get? Too little and it is useless. Too much and one bad step can be a disaster.',
+                'Decide, for each action, whether the agent may do it alone, must ask a human first, or must never be able to do it.', '<span class="tip">Walk into a golem to challenge it.</span>']
         ],
         wander: [
             ['Pip wants to reach the glowing plate. Every step it <b>scores</b> its four possible moves (closer to the plate scores higher) and then <b>picks one</b>.',
@@ -297,6 +326,21 @@
             '<b>In the real world:</b> real prices change, and local has hidden costs: setup time, maintenance, and hardware that can sit idle.',
             '<b>Use it:</b> estimate your volume first. A few requests a day rarely justify hardware. Millions might.'
         ],
+        agentloop: [
+            '<b>Name it:</b> the <i>agent loop</i>: the harness gives the model the goal and the history, the model picks a tool and its inputs, the harness runs the tool, adds the result to the history, and checks whether to stop.',
+            '<b>In the real world:</b> coding agents and research agents all run this loop, often dozens of times. The model only <i>proposes</i> actions. The harness is the part that actually does things, remembers, and enforces limits.',
+            '<b>Use it:</b> when an agent misbehaves, ask which part failed: the model\'s choice, the tool, the history it was given, or a missing limit in the harness.'
+        ],
+        guards: [
+            '<b>Name it:</b> <i>agent guardrails</i>: step limits, spending caps, loop detection and approval gates, built into the harness.',
+            '<b>In the real world:</b> agents can loop, wander and spend real money. Telling a model to behave is not a limit. A step cap alone cannot catch everything: a repeat detector, a cap and a spending control each catch different failures.',
+            '<b>Use it:</b> layer several simple limits, size them for legitimate tasks (not too tight), and alert a human when one trips.'
+        ],
+        autonomy: [
+            '<b>Name it:</b> <i>levels of autonomy</i> (also called <i>human in the loop</i>): deciding which actions an agent may do on its own, which need approval, and which it must never do.',
+            '<b>In the real world:</b> low-risk, reversible actions can run automatically. Actions that are hard to undo or leave your organisation need a human. Asking about everything causes approval fatigue, and people stop reading. For catastrophic actions, do not hand the agent the power at all.',
+            '<b>Use it:</b> sort actions by how reversible they are and how far the damage could spread, and give an agent the least privilege it needs.'
+        ],
         rules: [
             '<b>Name it:</b> a <i>rule-based system</i> (sometimes called symbolic AI). A person writes the logic, and the software follows it exactly.',
             '<b>In the real world:</b> tax software, thermostats and early spam filters work this way. They are predictable and easy to explain, but they only handle cases someone thought of.',
@@ -348,6 +392,9 @@
         speed:      { dungeon: 'hood',   title: 'Tokens per second',         where: 'The Speed Run',        line: 'Match speed to the job: wait for the first token, streaming rate, or total throughput.' },
         cache:      { dungeon: 'hood',   title: 'Caching',                   where: 'The Cache Vault',      line: 'Put stable content first in a prompt so the cache can reuse it.' },
         guardrails: { dungeon: 'hood',   title: 'Alignment and guardrails',  where: 'The Guardrail Gate',   line: 'Uncensored removes a model\'s refusals, not the risk. Add protection somewhere else.' },
+        agentloop:  { dungeon: 'agentic', title: 'The agent loop',        where: 'The Agent Loop',       line: 'The model proposes. The harness runs the tool, remembers the result and enforces the limits.' },
+        guards:     { dungeon: 'agentic', title: 'Agent guardrails',       where: 'The Runaway',          line: 'Layer step caps, loop detection and spending controls, and size them for real work.' },
+        autonomy:   { dungeon: 'agentic', title: 'Levels of autonomy',     where: 'The Autonomy Gate',    line: 'Automatic for the safe and reversible, a human for the hard to undo, never for the catastrophic.' },
         contrast:   { dungeon: 'forge',  title: 'Temperature',               where: 'The Wander Test',      line: 'Low is repeatable, high is varied. Choose by the task.' },
         sampling:   { dungeon: 'forge',  title: 'Sampling',                  where: 'The Hall of Repeats',  line: 'Models sample from odds, so unlikely outcomes sometimes happen at higher temperature.' },
         stuck:      { dungeon: 'forge',  title: 'Greedy decoding',           where: 'The Garden of Wonders', line: 'At temperature 0 a model can loop. A little randomness lets it explore.' }

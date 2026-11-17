@@ -198,6 +198,12 @@
         chamber(2, 'poison', 'The Poisoned Inbox', 'Stop an injected instruction from doing real damage.', 'poison')
     ];
 
+    var AGENTIC_ROOMS = [
+        chamber(0, 'loop', 'The Agent Loop', 'Put the loop in order and say who does each step.', 'agentloop'),
+        chamber(1, 'runaway', 'The Runaway', 'Set limits that stop every runaway without blocking real work.', 'guards'),
+        chamber(2, 'autonomygate', 'The Autonomy Gate', 'Decide what an agent may do alone.', 'autonomy')
+    ];
+
     var LOCAL_ROOMS = [
         chamber(0, 'packing', 'The Packing Room', 'Fit the best model into each machine\'s memory.', 'packing'),
         chamber(1, 'datagate', 'The Data Gate', 'Decide where each job should run: local or cloud.', 'datagate'),
@@ -298,6 +304,20 @@
             blurb: 'Tokens per second, caches, and what separates a normal model from an uncensored one.',
             thumb: 'speed',
             rooms: HOOD_ROOMS
+        },
+        {
+            id: 'agentic',
+            title: 'Agentic AI',
+            group: 'bonus',
+            difficulty: 'hard',
+            unit: 'Chamber',
+            hud: 'basic',
+            theme: 'rust',
+            ready: true,
+            requires: ['ai', 'models', 'talk', 'trust', 'local'], // bonus: opens once every Basics dungeon is cleared
+            blurb: 'How an agent really works, what stops it running away, and how much freedom to give it.',
+            thumb: 'loop',
+            rooms: AGENTIC_ROOMS
         },
         {
             id: 'forge',

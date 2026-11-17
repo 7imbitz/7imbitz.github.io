@@ -124,7 +124,8 @@
         packing: '#4cc9f0', datagate: '#06d6a0', toll: '#ffd166',
         speed: '#ffd166', cache: '#4cc9f0', guardgate: '#ef476f',
         sysprompt: '#06d6a0', context: '#b18cff', tokenunits: '#ff9f43',
-        verify: '#ef476f', doors: '#ffd166', poison: '#b18cff'
+        verify: '#ef476f', doors: '#ffd166', poison: '#b18cff',
+        agentloop: '#4cc9f0', guards: '#ff9f43', autonomy: '#ef476f'
     };
     Object.keys(GOLEM_RUNE).forEach(function (k) { sprite['golem_' + k] = makeSprite(SPRITES.golem, { r: GOLEM_RUNE[k] }); });
 
@@ -139,6 +140,7 @@
         default: { floorA: '#2b2547', floorB: '#272142', speck: '#332c55', wall: '#4a3d7a', wallDark: '#362c5c', wallLight: '#5d4f93' },
         teal:    { floorA: '#1f3a44', floorB: '#1b333c', speck: '#28505c', wall: '#2f6b7a', wallDark: '#21505c', wallLight: '#43899a' },
         ember:   { floorA: '#3d2b26', floorB: '#372621', speck: '#4d3830', wall: '#7a4a3a', wallDark: '#5c3529', wallLight: '#93614d' },
+        rust:    { floorA: '#3b2a22', floorB: '#35251e', speck: '#4a352b', wall: '#8a4b2a', wallDark: '#693a20', wallLight: '#a8643c' },
         plum:    { floorA: '#3a2433', floorB: '#34202d', speck: '#4a2f42', wall: '#7a3f64', wallDark: '#5c2f4c', wallLight: '#93517a' },
         moss:    { floorA: '#22362d', floorB: '#1e3028', speck: '#2b4639', wall: '#3f7a5c', wallDark: '#2e5c45', wallLight: '#54976f' },
         steel:   { floorA: '#262d3d', floorB: '#222938', speck: '#303a4f', wall: '#4a5a7a', wallDark: '#364360', wallLight: '#62759b' }
@@ -662,7 +664,8 @@
         packing: 'quant', datagate: 'privacy', toll: 'cost',
         speed: 'speed', cache: 'cache', guardgate: 'guardrails',
         sysprompt: 'sysprompt', context: 'context', tokenunits: 'tokenunits',
-        verify: 'hallucination', doors: 'grounding', poison: 'injection'
+        verify: 'hallucination', doors: 'grounding', poison: 'injection',
+        agentloop: 'agentloop', guards: 'guards', autonomy: 'autonomy'
     };
 
     function openPuzzle() {

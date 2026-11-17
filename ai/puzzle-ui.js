@@ -1289,6 +1289,157 @@
     }
 
     /* ---------------------------------------------------------------- */
+    /* Agentic AI, chamber 1: the Agent Loop                             */
+    /* ---------------------------------------------------------------- */
+    function buildAgentLoop(host, cb) {
+        var wrap = panelFrame('The Agent Loop',
+            tr('An agent is a model plus a <b>harness</b>: the code around the model. The loop below runs again and again until the goal is met. Put the five steps in order, then decide who does what.'), cb);
+
+        var order = P.LOOP_START_ORDER.slice();
+        var list = h('div', { class: 'cache-list' });
+        var meter = h('div', { class: 'cache-meter', 'aria-live': 'polite' });
+        var quizBox = h('div', { class: 'tok-quiz' });
+        var quizShown = false;
+
+        function stepText(id) { return P.LOOP_STEPS.filter(function (x) { return x.id === id; })[0].text; }
+
+        function move(i, dir) {
+            var j = i + dir;
+            if (j < 0 || j >= order.length) { return; }
+            var tmp = order[i]; order[i] = order[j]; order[j] = tmp;
+            render();
+        }
+
+        function render() {
+            clear(list);
+            var placed = P.loopCheck(order);
+            var good = placed.filter(Boolean).length;
+            order.forEach(function (id, i) {
+                var row = h('div', { class: 'cache-row ' + (placed[i] ? 'hit' : 'miss') }, [
+                    h('span', { class: 'cache-name', raw: (i + 1) + '. ' + stepText(id) }),
+                    h('span', { class: 'cache-tag', raw: placed[i] ? tr('✓ in the right place') : '' })
+                ]);
+                var up = h('button', { class: 'ghost small', type: 'button', ariaRaw: tr('Move step {n} up', { n: i + 1 }), text: '▲' });
+                var down = h('button', { class: 'ghost small', type: 'button', ariaRaw: tr('Move step {n} down', { n: i + 1 }), text: '▼' });
+                up.disabled = i === 0;
+                down.disabled = i === order.length - 1;
+                up.addEventListener('click', function () { move(i, -1); });
+                down.addEventListener('click', function () { move(i, 1); });
+                row.appendChild(h('span', { class: 'cache-btns' }, [up, down]));
+                list.appendChild(row);
+            });
+            clear(meter);
+            meter.appendChild(h('p', { class: 'score ' + (good === order.length ? 'good' : 'bad'),
+                raw: tr('Steps in the right place: {n} of {total}', { n: good, total: order.length }) }));
+            if (good === order.length && !quizShown) {
+                quizShown = true;
+                quizBox.appendChild(h('h3', { text: 'Now: who does what?' }));
+                buildQuiz(quizBox, cb, {
+                    options: [{ id: 'model', label: 'The model' }, { id: 'harness', label: 'The harness' }],
+                    items: P.LOOP_WHO, pass: 5,
+                    passMsg: 'The loop is yours. The model proposes, and the harness does everything else.'
+                });
+            }
+        }
+
+        wrap.appendChild(list);
+        wrap.appendChild(meter);
+        wrap.appendChild(quizBox);
+        host.appendChild(wrap);
+        render();
+    }
+
+    /* ---------------------------------------------------------------- */
+    /* Agentic AI, chamber 2: the Runaway                                */
+    /* ---------------------------------------------------------------- */
+    function buildGuards(host, cb) {
+        var wrap = panelFrame('The Runaway',
+            tr('Four agents are about to go wrong. Set the limits in the harness, then run all four. Every runaway must be stopped, but the genuine task has to be allowed to finish. Each step costs about ${cost}.', { cost: P.GUARD_COST_PER_STEP.toFixed(2) }), cb);
+
+        var cfg = { steps: 0, repeat: false, spend: 'none' };
+        var results = h('div', { class: 'puz-result', 'aria-live': 'polite' });
+
+        function group(title, options, current, onPick) {
+            var row = h('div', { class: 'tool-row' });
+            var btns = [];
+            options.forEach(function (o) {
+                var b = h('button', { class: 'ghost tool' + (current() === o.value ? ' on' : ''), type: 'button', 'aria-pressed': current() === o.value ? 'true' : 'false', text: o.label });
+                b.addEventListener('click', function () {
+                    onPick(o.value);
+                    btns.forEach(function (x) { x.btn.className = 'ghost tool' + (current() === x.value ? ' on' : ''); x.btn.setAttribute('aria-pressed', current() === x.value ? 'true' : 'false'); });
+                });
+                btns.push({ value: o.value, btn: b });
+                row.appendChild(b);
+            });
+            return h('div', { class: 'q' }, [h('p', { class: 'q-text', text: title }), row]);
+        }
+
+        wrap.appendChild(group('Step limit',
+            P.GUARD_STEP_OPTIONS.map(function (o) { return { value: o.n, label: o.label }; }),
+            function () { return cfg.steps; }, function (v) { cfg.steps = v; }));
+        wrap.appendChild(group('Loop detection',
+            [{ value: false, label: 'Off' }, { value: true, label: 'Stop if the same action repeats 3 times' }],
+            function () { return cfg.repeat; }, function (v) { cfg.repeat = v; }));
+        wrap.appendChild(group('Spending control',
+            P.GUARD_SPEND_OPTIONS.map(function (o) { return { value: o.id, label: o.label }; }),
+            function () { return cfg.spend; }, function (v) { cfg.spend = v; }));
+
+        function describe(r) {
+            var d = r.detail;
+            if (r.scenario.id === 'long') {
+                return d.kind === 'finished' ? tr('Finished all 40 steps.') : tr('Cut off at step {steps} with the task unfinished.', { steps: d.steps });
+            }
+            if (r.scenario.id === 'purchase') {
+                if (d.kind === 'capped') { return tr('The $100 cap blocked the $2,400 purchase.'); }
+                if (d.kind === 'paused') { return tr('The agent paused and asked a human, who said no.'); }
+                return tr('The agent bought it. $2,400 is gone.');
+            }
+            return d.kind === 'stopped'
+                ? tr('Stopped after {steps} steps, costing about ${cost}.', { steps: d.steps, cost: d.cost.toFixed(2) })
+                : tr('Ran for {steps} steps and burned about ${cost}.', { steps: d.steps, cost: d.cost.toFixed(2) });
+        }
+
+        function run() {
+            clear(results);
+            var rs = P.runGuards(cfg);
+            var good = 0;
+            rs.forEach(function (r) {
+                if (r.ok) { good++; }
+                var box = h('div', { class: 'q ' + (r.ok ? 'ok' : 'wrong') }, [
+                    h('p', { class: 'q-text', raw: (r.ok ? '✓ ' : '✗ ') + r.scenario.title + ': ' + r.scenario.text }),
+                    h('p', { class: 'q-why', raw: describe(r) + (r.ok ? '' : ' ' + r.scenario.lesson) })
+                ]);
+                results.appendChild(box);
+            });
+            results.appendChild(h('p', { class: 'score ' + (good === rs.length ? 'good' : 'bad'), raw: tr('{good} / {total} runaways handled', { good: good, total: rs.length }) }));
+            if (good === rs.length) {
+                results.appendChild(h('p', { text: 'Every runaway is stopped and the real task still finishes. Notice that no single limit did it: a step cap, a repeat detector and a spending control each caught something the others could not.' }));
+                results.appendChild(openDoorButton(cb));
+            } else {
+                results.appendChild(h('p', { text: 'Adjust the limits and run again. A single limit rarely catches everything.' }));
+            }
+        }
+
+        wrap.appendChild(h('button', { class: 'go', type: 'button', text: 'Run the four scenarios', on: { click: run } }));
+        wrap.appendChild(results);
+        host.appendChild(wrap);
+    }
+
+    /* ---------------------------------------------------------------- */
+    /* Agentic AI, chamber 3: the Autonomy Gate                          */
+    /* ---------------------------------------------------------------- */
+    function buildAutonomy(host, cb) {
+        quizPanel(host, cb, 'The Autonomy Gate',
+            tr('An agent can do real things. For each action, decide how much freedom it gets: run on its own, ask a human first, or never be allowed. Get 5 of {total} right.', { total: P.AUTONOMY_ACTIONS.length }),
+            {
+                options: [{ id: 'auto', label: 'Run automatically' }, { id: 'ask', label: 'Ask a human first' }, { id: 'never', label: 'Never allow' }],
+                legend: P.AUTONOMY_PRIMER,
+                items: P.AUTONOMY_ACTIONS, pass: 5,
+                passMsg: 'The gate opens. You know how much freedom to give an agent, and where to keep a human in the loop.'
+            });
+    }
+
+    /* ---------------------------------------------------------------- */
     /* public API                                                        */
     /* ---------------------------------------------------------------- */
     var api = {
@@ -1316,6 +1467,9 @@
             else if (kind === 'verify') { buildVerify(host, cb); }
             else if (kind === 'doors') { buildDoors(host, cb); }
             else if (kind === 'poison') { buildPoison(host, cb); }
+            else if (kind === 'agentloop') { buildAgentLoop(host, cb); }
+            else if (kind === 'guards') { buildGuards(host, cb); }
+            else if (kind === 'autonomy') { buildAutonomy(host, cb); }
         },
         close: function (silent) {
             if (!current) { return; }

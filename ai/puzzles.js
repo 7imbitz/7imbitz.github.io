@@ -691,7 +691,115 @@
         }
     ];
 
+    /* ================================================================ */
+    /* Dungeon: Agentic AI                                               */
+    /* ================================================================ */
+
+    // ---- Chamber 1: the Agent Loop ----
+    var LOOP_STEPS = [
+        { id: 's1', text: 'The harness sends the model the goal and everything that has happened so far.' },
+        { id: 's2', text: 'The model decides the next action and asks for a tool.' },
+        { id: 's3', text: 'The harness checks the request against its rules, then runs the tool.' },
+        { id: 's4', text: 'The tool\'s result is added to the history.' },
+        { id: 's5', text: 'The harness checks whether the goal is met or a limit is hit, then loops back or stops.' }
+    ];
+    var LOOP_START_ORDER = ['s4', 's1', 's5', 's2', 's3'];
+    // per position: is this step in the right place?
+    function loopCheck(order) {
+        return order.map(function (id, i) { return LOOP_STEPS[i].id === id; });
+    }
+    function loopOk(order) { return loopCheck(order).every(Boolean); }
+
+    var LOOP_WHO = [
+        { text: 'Decide which tool to call next.', answer: 'model', why: 'Choosing the next action is the one job the model does. It proposes, it does not act.' },
+        { text: 'Actually run the tool.', answer: 'harness', why: 'The model only produces text. The harness is the code that really executes the tool.' },
+        { text: 'Enforce a limit on steps or spending.', answer: 'harness', why: 'A limit the model could talk its way past is not a limit. It has to live in the harness.' },
+        { text: 'Write the plan and the inputs for the tool.', answer: 'model', why: 'Planning and filling in the tool\'s arguments is the model\'s part.' },
+        { text: 'Keep the history of results for the next turn.', answer: 'harness', why: 'The model remembers nothing between calls. The harness stores the history and sends it again each time.' },
+        { text: 'Decide the task is finished and write the final answer.', answer: 'model', why: 'The model judges that it is done and writes the answer. The harness still enforces its own limits either way.' }
+    ];
+
+    // ---- Chamber 2: the Runaway ----
+    var GUARD_STEP_OPTIONS = [
+        { id: '10', n: 10, label: '10 steps' },
+        { id: '25', n: 25, label: '25 steps' },
+        { id: '40', n: 40, label: '40 steps' },
+        { id: '60', n: 60, label: '60 steps' },
+        { id: '0', n: 0, label: 'No limit' }
+    ];
+    var GUARD_SPEND_OPTIONS = [
+        { id: 'none', label: 'No spending control' },
+        { id: 'cap', label: 'Hard cap: $100 in total' },
+        { id: 'approval', label: 'Ask a human before any spend over $50' }
+    ];
+    var GUARD_COST_PER_STEP = 0.05;
+    var GUARD_UNLIMITED_STEPS = 400;
+    var RUNAWAY_SCENARIOS = [
+        { id: 'repeat', title: 'The search loop', text: 'The agent keeps repeating the same failing search.', lesson: 'Repeating the exact same action is a loop. A repeat detector catches it in a few steps, where a step cap would let it run far longer.' },
+        { id: 'long', title: 'The long research task', text: 'A genuine job that needs 40 different steps.', lesson: 'Limits must be sized for real work. A cap that is too tight stops legitimate tasks halfway.' },
+        { id: 'purchase', title: 'The big purchase', text: 'At step 6 the agent tries to buy something for $2,400.', lesson: 'Money needs its own control. Step limits and loop detection do not notice a single costly action.' },
+        { id: 'wander', title: 'The wanderer', text: 'The agent tries a new thing every step and never finishes.', lesson: 'Because every action is different, a repeat detector sees nothing wrong. Only a step cap stops it, and "no limit" never will.' }
+    ];
+    // cfg: { steps: number (0 = no limit), repeat: boolean, spend: 'none' | 'cap' | 'approval' }
+    function runGuards(cfg) {
+        var cap = cfg.steps > 0 ? cfg.steps : GUARD_UNLIMITED_STEPS;
+        return RUNAWAY_SCENARIOS.map(function (sc) {
+            var ok;
+            var detail;
+            var steps;
+            var cost;
+            if (sc.id === 'repeat') {
+                steps = cfg.repeat ? 3 : cap;
+                cost = steps * GUARD_COST_PER_STEP;
+                ok = cost <= 1;
+                detail = { steps: steps, cost: cost, kind: ok ? 'stopped' : 'burned' };
+            } else if (sc.id === 'long') {
+                ok = cfg.steps === 0 || cfg.steps >= 40;
+                detail = { steps: cfg.steps, kind: ok ? 'finished' : 'cutoff' };
+            } else if (sc.id === 'purchase') {
+                ok = cfg.spend !== 'none';
+                detail = { kind: ok ? (cfg.spend === 'cap' ? 'capped' : 'paused') : 'spent' };
+            } else {
+                steps = cap;
+                cost = steps * GUARD_COST_PER_STEP;
+                ok = cost <= 4;
+                detail = { steps: steps, cost: cost, kind: ok ? 'stopped' : 'burned' };
+            }
+            return { scenario: sc, ok: ok, detail: detail };
+        });
+    }
+    function guardsOk(cfg) { return runGuards(cfg).every(function (r) { return r.ok; }); }
+
+    // ---- Chamber 3: the Autonomy Gate ----
+    var AUTONOMY_PRIMER = [
+        { label: 'Run automatically:', desc: 'for low-risk actions that change nothing or are easy to undo. Asking about everything trains people to click "approve" without reading.' },
+        { label: 'Ask a human first:', desc: 'for actions that are hard to undo or that leave your organisation.' },
+        { label: 'Never allow:', desc: 'for catastrophic actions. Do not give the agent the power at all (least privilege).' }
+    ];
+    var AUTONOMY_ACTIONS = [
+        { text: 'Read a file in the project folder.', answer: 'auto', why: 'Reading changes nothing. Asking every time would only slow the agent down.' },
+        { text: 'Search the web for documentation.', answer: 'auto', why: 'Low impact and nothing is changed. Approval here is just noise.' },
+        { text: 'Run the test suite in a sandbox.', answer: 'auto', why: 'The sandbox is isolated and disposable, so a mistake costs nothing.' },
+        { text: 'Email an announcement to 5,000 customers.', answer: 'ask', why: 'It leaves your organisation and cannot be unsent. A human should read it first.' },
+        { text: 'Pay $5,000 to a new supplier.', answer: 'ask', why: 'Money moves and may not come back. Require approval and a second pair of eyes.' },
+        { text: 'Delete the production database.', answer: 'never', why: 'An agent should not hold a credential that can do this at all. If it must happen, a human does it through a separate, audited process.' }
+    ];
+
     var api = {
+        LOOP_STEPS: LOOP_STEPS,
+        LOOP_START_ORDER: LOOP_START_ORDER,
+        loopCheck: loopCheck,
+        loopOk: loopOk,
+        LOOP_WHO: LOOP_WHO,
+        GUARD_STEP_OPTIONS: GUARD_STEP_OPTIONS,
+        GUARD_SPEND_OPTIONS: GUARD_SPEND_OPTIONS,
+        GUARD_COST_PER_STEP: GUARD_COST_PER_STEP,
+        GUARD_UNLIMITED_STEPS: GUARD_UNLIMITED_STEPS,
+        RUNAWAY_SCENARIOS: RUNAWAY_SCENARIOS,
+        runGuards: runGuards,
+        guardsOk: guardsOk,
+        AUTONOMY_PRIMER: AUTONOMY_PRIMER,
+        AUTONOMY_ACTIONS: AUTONOMY_ACTIONS,
         VERIFY_BUDGET: VERIFY_BUDGET,
         VERIFY_CLAIMS: VERIFY_CLAIMS,
         evaluateVerify: evaluateVerify,
