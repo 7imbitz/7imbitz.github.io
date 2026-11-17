@@ -173,6 +173,23 @@
                     '<b>Hardware:</b> NVIDIA GPUs use CUDA, Apple chips use Metal with shared memory, Vulkan is an open option, and a CPU works but slowly.',
                     '<b>Engines:</b> an inference engine adds a compatible API, prompt caching, speculative decoding, batching and context compaction on top of running the model.',
                     '<b>Bandwidth:</b> speed is roughly memory bandwidth divided by model size, so a smaller or more quantized model is faster, and the model has to fit in memory first.'],
+                ['<span class="tip">Next: Seeing and Hearing. How can a model look at a picture, and what does it cost?</span>']
+            ],
+            clearButton: 'Back to the dungeons'
+        },
+        senses: {
+            intro: [
+                ['Some models can look at a picture, listen to a recording, or watch a clip. Others cannot, and the difference comes down to <b>extra parts</b>, how media turns into <b>tokens</b>, and <b>memory</b>.'],
+                ['Three chambers lie ahead: how to tell what a model can take in, how pictures and sound become tokens, and what seeing costs in VRAM.',
+                    '<span class="tip">Walk into a golem to challenge it.</span>']
+            ],
+            introButton: 'Enter the dungeon',
+            clearTitle: 'Seeing and Hearing cleared!',
+            clear: [
+                ['<b>Loot: the Lens.</b>',
+                    '<b>Which models:</b> read the model card. Look at the input line and for an encoder for each kind of input. A text-only model cannot take a picture.',
+                    '<b>Tokens:</b> pictures are cut into patches, sound is sliced into frames, and video is many pictures. All of it becomes tokens that use up the context window.',
+                    '<b>Memory:</b> a vision model carries an extra encoder, and every image token takes space in the context. Check that the whole thing fits in VRAM.'],
                 ['<span class="tip">Try the Forge next. Local models are tuned with a <b>modelfile</b>: temperature, context length (num_ctx) and the system prompt.</span>']
             ],
             clearButton: 'Back to the dungeons'
@@ -287,6 +304,18 @@
         runaway: [
             ['Four agents are about to go wrong: one repeats itself, one is doing real work, one tries a big purchase, and one wanders aimlessly.',
                 'Set the limits in the harness so that every runaway is stopped, but the genuine task is allowed to finish.', '<span class="tip">Walk into a golem to challenge it.</span>']
+        ],
+        cardhall: [
+            ['A model card is the short description that comes with a model. It tells you what the model is, and what it can take in.',
+                'For each card, decide whether the model reads only text, or can also look at images or listen to audio.', '<span class="tip">Walk into a golem to challenge it.</span>']
+        ],
+        pixelmill: [
+            ['A language model only understands tokens. To handle a picture, a sound or a video, the media is first turned into tokens too.',
+                'A bigger picture or a longer clip makes more tokens, and every token uses up the context window. Choose settings that fit and still work.', '<span class="tip">Walk into a golem to challenge it.</span>']
+        ],
+        vramvault: [
+            ['A model that can see is a language model with extra parts bolted on. Those parts take memory, and so do the pictures you send.',
+                'For each graphics card, pick the best model that can see and fits.', '<span class="tip">Walk into a golem to challenge it.</span>']
         ],
         hardware: [
             ['A model is just numbers until a chip runs it. Different chips need different software to drive them.',
@@ -473,6 +502,21 @@
             '<b>In the real world:</b> real prices change, and local has hidden costs: setup time, maintenance, and hardware that can sit idle.',
             '<b>Use it:</b> estimate your volume first. A few requests a day rarely justify hardware. Millions might.'
         ],
+        multimodal: [
+            '<b>Name it:</b> a <i>multimodal</i> model takes more than one kind of input, such as text, images and audio. It does this with an <i>encoder</i> for each kind that turns the input into numbers the language model can read, plus a <i>projector</i> that connects the two.',
+            '<b>In the real world:</b> many models are text-only, and a model that was not built with an encoder cannot see, however large it is. Names and cards give hints: a tag such as VL or vision, a modalities line, an extra projector file. A speech-to-text step in front of a text model is a workaround, not a multimodal model.',
+            '<b>Use it:</b> check the model card for the input line and the encoders before you download, and test with your own pictures, since quality differs a lot between models.'
+        ],
+        mediatokens: [
+            '<b>Name it:</b> <i>media tokens</i>: an image is cut into small patches and each patch becomes tokens, sound is turned into tokens a few dozen per second, and video is a series of images plus sound.',
+            '<b>In the real world:</b> media is expensive. One image can cost as much as pages of text, a long clip can fill the whole context window, and a picture shrunk too far loses the small text in it. The exact counts differ between models.',
+            '<b>Use it:</b> send only the resolution, the frames and the length you need, and work out the token cost before you send a large batch.'
+        ],
+        visionvram: [
+            '<b>Name it:</b> <i>vision memory cost</i>: a vision model needs memory for the language model, for the image encoder, and for the context, which includes every image token.',
+            '<b>In the real world:</b> this is why a model that fits for text can run out of memory once you send several photos. Each image adds to the context memory, so more images means less room, and bigger models need bigger cards.',
+            '<b>Use it:</b> add up the weights, the vision part and the context for your longest job, leave headroom, and shrink the model, the resolution or the number of images if it does not fit.'
+        ],
         gpus: [
             '<b>Name it:</b> a <i>GPU platform</i>: the software layer that lets programs use a graphics chip for general maths. <i>CUDA</i> is NVIDIA\'s, <i>Metal</i> is Apple\'s, and <i>Vulkan</i> is an open interface used by many makers.',
             '<b>In the real world:</b> most AI software supports CUDA first, so NVIDIA is the safe default. Apple chips share one pool of memory between the CPU and GPU, which lets large models fit. A CPU alone can run small models, but slowly.',
@@ -599,6 +643,9 @@
         speed:      { dungeon: 'hood',   title: 'Tokens per second',         where: 'The Speed Run',        line: 'Match speed to the job: wait for the first token, streaming rate, or total throughput.' },
         cache:      { dungeon: 'hood',   title: 'Caching',                   where: 'The Cache Vault',      line: 'Put stable content first in a prompt so the cache can reuse it.' },
         guardrails: { dungeon: 'hood',   title: 'Alignment and guardrails',  where: 'The Guardrail Gate',   line: 'Uncensored removes a model\'s refusals, not the risk. Add protection somewhere else.' },
+        multimodal: { dungeon: 'senses',  title: 'Multimodal models',      where: 'The Model Card Hall',  line: 'Check the card: a model needs an encoder for each kind of input it can take.' },
+        mediatokens: { dungeon: 'senses', title: 'Pictures and sound as tokens', where: 'The Pixel Mill', line: 'Media becomes tokens too, and a lot of them. Send only the size and frames you need.' },
+        visionvram: { dungeon: 'senses',  title: 'Vision and memory',      where: 'The VRAM Vault',       line: 'Seeing costs memory twice: for the vision part, and for every image in the context.' },
         gpus:       { dungeon: 'metal',   title: 'GPUs: CUDA, Metal, Vulkan', where: 'The Hardware Hall',   line: 'The chip decides which software runs, and its memory decides which models fit.' },
         engines:    { dungeon: 'metal',   title: 'Inference engines',      where: 'The Engine Room',      line: 'An engine adds an API, caching, speculative decoding and batching around the model.' },
         bandwidth:  { dungeon: 'metal',   title: 'Memory bandwidth',       where: 'The Bandwidth Bottleneck', line: 'Speed is roughly bandwidth divided by model size. The model must fit first.' },

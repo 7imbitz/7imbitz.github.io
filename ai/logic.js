@@ -326,6 +326,12 @@
         chamber(2, 'bandwidth', 'The Bandwidth Bottleneck', 'Pick the best model each machine can run fast enough.', 'bandwidth')
     ];
 
+    var SENSES_ROOMS = [
+        chamber(0, 'cardhall', 'The Model Card Hall', 'Read each model card and say what the model can take in.', 'inputs'),
+        chamber(1, 'pixelmill', 'The Pixel Mill', 'Fit a picture, a voice memo and a video clip into the context window.', 'pixels'),
+        chamber(2, 'vramvault', 'The VRAM Vault', 'Pick the best model that can see and still fits in memory.', 'visionfit')
+    ];
+
     var LOCAL_ROOMS = [
         chamber(0, 'packing', 'The Packing Room', 'Fit the best model into each machine\'s memory.', 'packing'),
         chamber(1, 'datagate', 'The Data Gate', 'Decide where each job should run: local or cloud.', 'datagate'),
@@ -496,6 +502,20 @@
             blurb: 'GPUs, CUDA and Metal, what an inference engine adds, and why memory bandwidth sets your speed.',
             thumb: 'engine',
             rooms: METAL_ROOMS
+        },
+        {
+            id: 'senses',
+            title: 'Seeing and Hearing',
+            group: 'bonus',
+            difficulty: 'hard',
+            unit: 'Chamber',
+            hud: 'basic',
+            theme: 'ember',
+            ready: true,
+            requires: ['ai', 'models', 'talk', 'trust', 'local', 'hood', 'agentic'], // bonus: opens once every Basics dungeon is cleared
+            blurb: 'Which models can see or hear, how pictures and sound become tokens, and why vision costs extra memory.',
+            thumb: 'vramvault',
+            rooms: SENSES_ROOMS
         },
         {
             id: 'forge',

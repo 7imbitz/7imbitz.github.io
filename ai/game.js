@@ -134,7 +134,8 @@
         shelf: '#ffd166', socket: '#06d6a0', pit: '#ff6b9d',
         team: '#4cc9f0', files: '#b18cff', memfile: '#ff9f43',
         attacks: '#ef476f', layers: '#06d6a0', modified: '#ffd166',
-        hardware: '#4cc9f0', engine: '#ff9f43', bandwidth: '#06d6a0'
+        hardware: '#4cc9f0', engine: '#ff9f43', bandwidth: '#06d6a0',
+        inputs: '#4cc9f0', pixels: '#ff9f43', visionfit: '#06d6a0'
     };
     Object.keys(GOLEM_RUNE).forEach(function (k) { sprite['golem_' + k] = makeSprite(SPRITES.golem, { r: GOLEM_RUNE[k] }); });
 
@@ -993,7 +994,8 @@
         shelf: 'toolspec', socket: 'mcp', pit: 'toolerrors',
         team: 'teams', files: 'agentfiles', memfile: 'agentmemory',
         attacks: 'jailbreaks', layers: 'layers', modified: 'modifiedmodels',
-        hardware: 'gpus', engine: 'engines', bandwidth: 'bandwidth'
+        hardware: 'gpus', engine: 'engines', bandwidth: 'bandwidth',
+        inputs: 'multimodal', pixels: 'mediatokens', visionfit: 'visionvram'
     };
 
     function openPuzzle() {

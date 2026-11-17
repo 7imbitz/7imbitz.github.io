@@ -1803,6 +1803,127 @@
         host.appendChild(wrap);
     }
 
+
+    /* ---------------------------------------------------------------- */
+    /* Seeing and Hearing                                                */
+    /* ---------------------------------------------------------------- */
+    function buildInputs(host, cb) {
+        quizPanel(host, cb, 'The Model Card Hall',
+            tr('Not every model can look at a picture or listen to a recording. The model card tells you what goes in. For each card, decide what the model can take in. Get 5 of {total} right.', { total: P.INPUT_ITEMS.length }),
+            {
+                options: P.INPUT_OPTIONS,
+                items: P.INPUT_ITEMS, pass: 5,
+                passMsg: 'You can read a card. Check the input line, and look for an encoder for each kind of input.'
+            });
+    }
+
+    function buildPixels(host, cb) {
+        var wrap = panelFrame('The Pixel Mill',
+            tr('A picture is cut into small squares, and each square becomes a token. Sound becomes {tps} tokens a second, and video is many pictures in a row. Everything must fit in the <b>{budget} tokens</b> left in the context window. Make sure the screenshot text is readable and the video catches the action, which happens within a second or two.', { tps: P.PIX_AUDIO_TPS, budget: P.PIX_BUDGET }), cb);
+        var sel = { res: 256, fps: 0.5, frame: 512 };
+        var board = h('div', { class: 'pix-board' });
+        var meter = h('p', { class: 'ctx-state', 'aria-live': 'polite' });
+        var results = h('div', { class: 'puz-result', 'aria-live': 'polite' });
+
+        function group(title, key, values, labelOf) {
+            var box = h('div', { class: 'q' }, [h('p', { class: 'q-text', text: title })]);
+            var btns = h('div', { class: 'q-btns' });
+            values.forEach(function (v) {
+                var on = sel[key] === v;
+                var b = h('button', { class: 'ghost tool' + (on ? ' on' : ''), type: 'button', 'aria-pressed': on ? 'true' : 'false', raw: labelOf(v) });
+                b.addEventListener('click', function () { sel[key] = v; clear(results); render(); });
+                btns.appendChild(b);
+            });
+            box.appendChild(btns);
+            return box;
+        }
+
+        function render() {
+            clear(board);
+            board.appendChild(group('A screenshot of a web page with small text', 'res', P.PIX_RES, function (v) { return v + ' px (' + tr('{n} tokens', { n: P.imageTokens(v) }) + ')'; }));
+            board.appendChild(group('A 30-second video clip: how many frames a second?', 'fps', P.PIX_FPS, function (v) { return tr('{n} per second', { n: v }); }));
+            board.appendChild(group('The size of each video frame', 'frame', P.PIX_FRAME, function (v) { return v + ' px (' + tr('{n} tokens', { n: P.imageTokens(v) }) + ')'; }));
+            board.appendChild(h('p', { class: 'small', raw: tr('Also in the prompt: a {s}-second voice memo ({n} tokens).', { s: P.PIX_AUDIO_SECONDS, n: P.PIX_AUDIO_SECONDS * P.PIX_AUDIO_TPS }) }));
+            var r = P.pixelResult(sel);
+            meter.textContent = tr('Media tokens: {used} of {budget}', { used: r.total, budget: P.PIX_BUDGET });
+            meter.className = 'ctx-state ' + (r.over ? 'bad' : 'good');
+        }
+
+        function run() {
+            clear(results);
+            var r = P.pixelResult(sel);
+            results.appendChild(h('p', { class: 'q-why ' + (r.legible ? 'ok' : 'wrong'), raw: r.legible ? tr('✓ The screenshot text is large enough to read.') : tr('✗ At this size the small text is a blur. The model cannot read it.') }));
+            results.appendChild(h('p', { class: 'q-why ' + (r.caught ? 'ok' : 'wrong'), raw: r.caught ? tr('✓ The video samples often enough to catch the action.') : tr('✗ The video samples too rarely and misses the action between frames.') }));
+            results.appendChild(h('p', { class: 'q-why ' + (!r.over ? 'ok' : 'wrong'), raw: !r.over ? tr('✓ {used} tokens fit in the window.', { used: r.total }) : tr('✗ {used} tokens do not fit in the {budget} left, so the window overflows.', { used: r.total, budget: P.PIX_BUDGET }) }));
+            if (r.ok) {
+                results.appendChild(h('p', { text: 'Everything fits. Media is expensive: a few pictures can cost more than pages of text, so send only the resolution and frames you need.' }));
+                results.appendChild(openDoorButton(cb));
+            } else {
+                results.appendChild(h('p', { text: 'Change the settings and send again.' }));
+            }
+        }
+
+        render();
+        wrap.appendChild(board);
+        wrap.appendChild(meter);
+        wrap.appendChild(h('button', { class: 'go', type: 'button', text: 'Send to the model', on: { click: run } }));
+        wrap.appendChild(results);
+        host.appendChild(wrap);
+    }
+
+    function buildVisionFit(host, cb) {
+        var wrap = panelFrame('The VRAM Vault',
+            tr('A model that can see has two extra things to carry: the <b>vision part</b> (an image encoder and connector), and the <b>image tokens</b>, which fill the context memory. A model with no vision part cannot take a picture at all. Pick the <b>best model that can see and fits</b> each card\'s memory.'), cb);
+        var picks = {};
+        var board = h('div', { class: 'vis-board' });
+        var results = h('div', { class: 'puz-result', 'aria-live': 'polite' });
+
+        function render() {
+            clear(board);
+            P.VIS_JOBS.forEach(function (job) {
+                var box = h('div', { class: 'q' }, [h('p', { class: 'q-text', raw: job.text + ' ' + tr('Context memory: {n} GB.', { n: P.visContextGb(job).toFixed(1) }) })]);
+                var btns = h('div', { class: 'q-btns' });
+                P.VIS_MODELS.forEach(function (m) {
+                    var on = picks[job.id] === m.id;
+                    var b = h('button', { class: 'ghost tool' + (on ? ' on' : ''), type: 'button', 'aria-pressed': on ? 'true' : 'false', raw: m.label + ' (' + (m.lang + m.vision) + ' GB)' });
+                    b.addEventListener('click', function () { picks[job.id] = m.id; clear(results); render(); });
+                    btns.appendChild(b);
+                });
+                box.appendChild(btns);
+                board.appendChild(box);
+            });
+        }
+
+        function run() {
+            clear(results);
+            var rows = P.visionResult(picks);
+            var good = 0;
+            rows.forEach(function (r, i) {
+                if (r.ok) { good++; }
+                var msg;
+                if (r.kind === 'none') { msg = tr('✗ {n}. No model chosen.', { n: i + 1 }); }
+                else if (r.kind === 'blind') { msg = tr('✗ {n}. {model} has no vision part, so it cannot take a picture at all.', { n: i + 1, model: r.model.label }); }
+                else if (r.kind === 'nofit') { msg = tr('✗ {n}. {model} needs about {need} GB with the pictures, but the card has {memory} GB.', { n: i + 1, model: r.model.label, need: r.need.toFixed(1), memory: r.job.memory }); }
+                else if (r.kind === 'weak') { msg = tr('✗ {n}. {model} works, but {better} also fits and is better.', { n: i + 1, model: r.model.label, better: r.best.label }); }
+                else { msg = tr('✓ {n}. {model} needs about {need} GB with the pictures and fits in {memory} GB. Nothing better fits.', { n: i + 1, model: r.model.label, need: r.need.toFixed(1), memory: r.job.memory }); }
+                results.appendChild(h('p', { class: 'q-why ' + (r.ok ? 'ok' : 'wrong'), raw: msg }));
+            });
+            results.appendChild(h('p', { class: 'score ' + (good === rows.length ? 'good' : 'bad'), raw: tr('{good} / {total} cards set up well', { good: good, total: rows.length }) }));
+            if (good === rows.length) {
+                results.appendChild(h('p', { text: 'The vault opens. Seeing costs memory twice: once for the vision part, and again for every picture in the context.' }));
+                results.appendChild(openDoorButton(cb));
+            } else {
+                results.appendChild(h('p', { text: 'Try other models and check again.' }));
+            }
+        }
+
+        render();
+        wrap.appendChild(board);
+        wrap.appendChild(h('button', { class: 'go', type: 'button', text: 'Check the memory', on: { click: run } }));
+        wrap.appendChild(results);
+        host.appendChild(wrap);
+    }
+
     /* ---------------------------------------------------------------- */
     /* public API                                                        */
     /* ---------------------------------------------------------------- */
@@ -1846,6 +1967,9 @@
             else if (kind === 'hardware') { buildHardware(host, cb); }
             else if (kind === 'engine') { buildEngine(host, cb); }
             else if (kind === 'bandwidth') { buildBandwidth(host, cb); }
+            else if (kind === 'inputs') { buildInputs(host, cb); }
+            else if (kind === 'pixels') { buildPixels(host, cb); }
+            else if (kind === 'visionfit') { buildVisionFit(host, cb); }
         },
         close: function (silent) {
             if (!current) { return; }

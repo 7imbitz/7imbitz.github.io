@@ -1090,7 +1090,112 @@
         });
     }
 
+
+    /* ================================================================ */
+    /* Dungeon: Seeing and Hearing (multimodal)                          */
+    /* ================================================================ */
+
+    // ---- Chamber 1: the Model Card Hall ----
+    var INPUT_OPTIONS = [
+        { id: 'text', label: 'Text only' },
+        { id: 'image', label: 'Text and images' },
+        { id: 'audio', label: 'Text and audio' },
+        { id: 'omni', label: 'Text, images and audio' }
+    ];
+    var INPUT_ITEMS = [
+        { text: 'Lumen-8B-Instruct. One weights file. The card says: "a chat model trained on text".', answer: 'text', why: 'There is no vision or audio part listed and only one file. It reads and writes text, nothing else.' },
+        { text: 'Lumen-8B-VL. The card lists a vision encoder, and the download has an extra projector file.', answer: 'image', why: '"VL" means vision-language. The encoder turns a picture into numbers, and the projector connects them to the language model.' },
+        { text: 'Echo-7B. The card lists an audio encoder and says it accepts spoken input.', answer: 'audio', why: 'An audio encoder is the part that turns sound into something the language model can read.' },
+        { text: 'Prism-Omni-12B. The card lists both a vision encoder and an audio encoder.', answer: 'omni', why: '"Omni" models take several kinds of input. Look for an encoder for each one.' },
+        { text: 'A card whose input modalities line reads: text, image.', answer: 'image', why: 'The modalities line says directly what the model can take in. It is the first thing to check.' },
+        { text: 'Wave-3B. The card says: "text-only chat model. For voice, add a separate speech-to-text tool".', answer: 'text', why: 'Turning speech into a transcript first is a workaround. The model itself still only reads text.' }
+    ];
+
+    // ---- Chamber 2: the Pixel Mill (pictures, sound and video become tokens) ----
+    // Illustrative numbers: real models differ, but the idea is the same.
+    var PIX_PATCH = 32;       // an image is cut into squares of this many pixels; each square becomes a token
+    var PIX_AUDIO_TPS = 25;   // tokens per second of audio
+    var PIX_AUDIO_SECONDS = 120;
+    var PIX_CLIP_SECONDS = 30;
+    var PIX_BUDGET = 5500;    // tokens left in the context window for media
+    var PIX_RES = [256, 512, 1024];
+    var PIX_FPS = [0.5, 1, 2];
+    var PIX_FRAME = [256, 512];
+    function imageTokens(side) { var n = Math.round(side / PIX_PATCH); return n * n; }
+    // sel: { res, fps, frame }
+    function pixelResult(sel) {
+        var shot = imageTokens(sel.res);
+        var frames = Math.round(PIX_CLIP_SECONDS * sel.fps);
+        var video = frames * imageTokens(sel.frame);
+        var audio = PIX_AUDIO_SECONDS * PIX_AUDIO_TPS;
+        var total = shot + video + audio;
+        var legible = sel.res >= 512;
+        var caught = sel.fps >= 1;
+        return { shot: shot, frames: frames, video: video, audio: audio, total: total, over: total > PIX_BUDGET, legible: legible, caught: caught, ok: total <= PIX_BUDGET && legible && caught };
+    }
+
+    // ---- Chamber 3: the VRAM Vault (why some models cannot see, and what seeing costs) ----
+    var VIS_BASE_CTX = 4000;     // tokens of ordinary chat
+    var VIS_TOKENS_PER_IMAGE = 1000;
+    var VIS_KV_PER_1000 = 0.25;  // GB of memory per 1,000 tokens of context
+    var VIS_MODELS = [
+        { id: 'v1', label: '7B text-only, 8-bit', lang: 8, vision: 0, quality: 0 },
+        { id: 'v2', label: '13B text-only, 4-bit', lang: 8, vision: 0, quality: 0 },
+        { id: 'v3', label: '7B vision, 4-bit', lang: 4.5, vision: 1.5, quality: 1 },
+        { id: 'v4', label: '7B vision, 8-bit', lang: 8, vision: 1.5, quality: 2 },
+        { id: 'v5', label: '13B vision, 4-bit', lang: 8, vision: 2.5, quality: 3 },
+        { id: 'v6', label: '34B vision, 4-bit', lang: 20, vision: 3, quality: 4 }
+    ];
+    var VIS_JOBS = [
+        { id: 'a', text: 'A 12 GB graphics card. You ask questions about 4 photos at a time.', memory: 12, images: 4 },
+        { id: 'b', text: 'The same 12 GB card, but now 8 photos at a time.', memory: 12, images: 8 },
+        { id: 'c', text: 'A 24 GB card, with 8 photos at a time.', memory: 24, images: 8 }
+    ];
+    function visModel(id) { return VIS_MODELS.filter(function (m) { return m.id === id; })[0]; }
+    function visContextGb(job) { return (VIS_BASE_CTX + job.images * VIS_TOKENS_PER_IMAGE) / 1000 * VIS_KV_PER_1000; }
+    function visNeed(job, model) { return model.lang + model.vision + visContextGb(job); }
+    function visCanSee(model) { return model.vision > 0; }
+    function visBest(job) {
+        var best = null;
+        VIS_MODELS.forEach(function (m) {
+            if (visCanSee(m) && visNeed(job, m) <= job.memory && (!best || m.quality > best.quality)) { best = m; }
+        });
+        return best;
+    }
+    // picks: { jobId: modelId }
+    function visionResult(picks) {
+        return VIS_JOBS.map(function (job) {
+            var m = picks[job.id] ? visModel(picks[job.id]) : null;
+            if (!m) { return { job: job, model: null, kind: 'none', ok: false }; }
+            var need = visNeed(job, m);
+            var best = visBest(job);
+            var kind = !visCanSee(m) ? 'blind' : (need > job.memory ? 'nofit' : (m.id !== best.id ? 'weak' : 'ok'));
+            return { job: job, model: m, kind: kind, ok: kind === 'ok', need: need, context: visContextGb(job), best: best };
+        });
+    }
+
     var api = {
+        INPUT_OPTIONS: INPUT_OPTIONS,
+        INPUT_ITEMS: INPUT_ITEMS,
+        PIX_PATCH: PIX_PATCH,
+        PIX_AUDIO_TPS: PIX_AUDIO_TPS,
+        PIX_AUDIO_SECONDS: PIX_AUDIO_SECONDS,
+        PIX_CLIP_SECONDS: PIX_CLIP_SECONDS,
+        PIX_BUDGET: PIX_BUDGET,
+        PIX_RES: PIX_RES,
+        PIX_FPS: PIX_FPS,
+        PIX_FRAME: PIX_FRAME,
+        imageTokens: imageTokens,
+        pixelResult: pixelResult,
+        VIS_BASE_CTX: VIS_BASE_CTX,
+        VIS_TOKENS_PER_IMAGE: VIS_TOKENS_PER_IMAGE,
+        VIS_KV_PER_1000: VIS_KV_PER_1000,
+        VIS_MODELS: VIS_MODELS,
+        VIS_JOBS: VIS_JOBS,
+        visContextGb: visContextGb,
+        visNeed: visNeed,
+        visBest: visBest,
+        visionResult: visionResult,
         HW_OPTIONS: HW_OPTIONS,
         HW_PRIMER: HW_PRIMER,
         HW_ITEMS: HW_ITEMS,
