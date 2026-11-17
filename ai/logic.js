@@ -302,6 +302,12 @@
         chamber(2, 'autonomygate', 'The Autonomy Gate', 'Decide what an agent may do alone.', 'autonomy')
     ];
 
+    var TOOLS_ROOMS = [
+        chamber(0, 'shelf', 'The Tool Shelf', 'Write tool descriptions so the model picks the right tool.', 'shelf'),
+        chamber(1, 'socket', 'The Socket Hall', 'Give each MCP server exactly the access its job needs.', 'socket'),
+        chamber(2, 'pit', 'The Error Pit', 'Decide what the harness does when a tool call goes wrong.', 'pit')
+    ];
+
     var LOCAL_ROOMS = [
         chamber(0, 'packing', 'The Packing Room', 'Fit the best model into each machine\'s memory.', 'packing'),
         chamber(1, 'datagate', 'The Data Gate', 'Decide where each job should run: local or cloud.', 'datagate'),
@@ -416,6 +422,20 @@
             blurb: 'How an agent really works, what stops it running away, and how much freedom to give it.',
             thumb: 'loop',
             rooms: AGENTIC_ROOMS
+        },
+        {
+            id: 'tools',
+            title: 'Tools and MCP',
+            group: 'bonus',
+            difficulty: 'hard',
+            unit: 'Chamber',
+            hud: 'basic',
+            theme: 'moss',
+            ready: true,
+            requires: ['ai', 'models', 'talk', 'trust', 'local', 'agentic'], // bonus: after the Basics and Agentic AI
+            blurb: 'How a model picks a tool, what MCP plugs in, and what the harness does when a call goes wrong.',
+            thumb: 'socket',
+            rooms: TOOLS_ROOMS
         },
         {
             id: 'forge',

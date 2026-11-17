@@ -109,6 +109,23 @@
             ],
             clearButton: 'Back to the dungeons'
         },
+        tools: {
+            intro: [
+                ['An agent is only as capable as its <b>tools</b>. Now see how a model chooses them, how <b>MCP</b> plugs them in, and what happens when a call goes wrong.'],
+                ['Three chambers lie ahead: the descriptions that tell a model what a tool is for, the sockets where MCP servers connect, and the pit where failed calls land.',
+                    '<span class="tip">Walk into a golem to challenge it.</span>']
+            ],
+            introButton: 'Enter the dungeon',
+            clearTitle: 'Tools and MCP cleared!',
+            clear: [
+                ['<b>Loot: the Toolbelt.</b>',
+                    '<b>Descriptions:</b> a model picks a tool by reading its description. Make it specific, and say what the tool is not for.',
+                    '<b>MCP:</b> a standard plug that lets any harness use any server. It makes connecting easy, so least privilege and trust matter more.',
+                    '<b>Errors:</b> the harness retries, trims, refuses or reports, and gives the model the errors it can fix.'],
+                ['<span class="tip">Try the Forge next. Local models are tuned with a <b>modelfile</b>: temperature, context length (num_ctx) and the system prompt.</span>']
+            ],
+            clearButton: 'Back to the dungeons'
+        },
         agentic: {
             intro: [
                 ['You have met agents: a model with tools. Now see what it takes to run one <b>safely</b>.'],
@@ -122,7 +139,7 @@
                     '<b>The loop:</b> the harness feeds the model, the model proposes an action, the harness checks and runs it, and the result goes back into the history. The model only proposes.',
                     '<b>Limits:</b> step caps, loop detection and spending controls each catch different failures, so layer them and size them for real work.',
                     '<b>Autonomy:</b> let agents act alone only on low-risk, reversible actions. Ask a human for the hard to undo, and never hand over the catastrophic.'],
-                ['<span class="tip">Try the Forge next. Local models are tuned with a <b>modelfile</b>: temperature, context length (num_ctx) and more.</span>']
+                ['<span class="tip">Next: Tools and MCP. How does a model choose a tool, and what is MCP?</span>']
             ],
             clearButton: 'Back to the dungeons'
         },
@@ -219,6 +236,18 @@
         runaway: [
             ['Four agents are about to go wrong: one repeats itself, one is doing real work, one tries a big purchase, and one wanders aimlessly.',
                 'Set the limits in the harness so that every runaway is stopped, but the genuine task is allowed to finish.', '<span class="tip">Walk into a golem to challenge it.</span>']
+        ],
+        shelf: [
+            ['A model never sees the code of a tool. All it has is a name and a short <b>description</b>, and it chooses from those.',
+                'Write a description for each of two tools, then send four customer requests and watch where they go.', '<span class="tip">Walk into a golem to challenge it.</span>']
+        ],
+        socket: [
+            ['<b>MCP</b>, the Model Context Protocol, is a standard way to plug tools and data into an AI harness. Write an MCP server once and many harnesses can use it.',
+                'Plugging in is easy, which is the risk. Each server brings its own powers, and some come from strangers.', '<span class="tip">Walk into a golem to challenge it.</span>']
+        ],
+        pit: [
+            ['Tool calls fail: services time out, files are missing, the model invents tools or asks for things it must not have.',
+                'The harness decides what happens next. Match each failure to the right response.', '<span class="tip">Walk into a golem to challenge it.</span>']
         ],
         autonomygate: [
             ['How much freedom should an agent get? Too little and it is useless. Too much and one bad step can be a disaster.',
@@ -357,6 +386,21 @@
             '<b>In the real world:</b> real prices change, and local has hidden costs: setup time, maintenance, and hardware that can sit idle.',
             '<b>Use it:</b> estimate your volume first. A few requests a day rarely justify hardware. Millions might.'
         ],
+        toolspec: [
+            '<b>Name it:</b> a <i>tool description</i> (or tool schema): the name, purpose and inputs that a model reads to decide which tool to call.',
+            '<b>In the real world:</b> the description is the whole interface. A vague one is ignored, and a broad one makes two tools overlap, so the model guesses and may reach for the risky one. Say what the tool does, when to use it, and when not to.',
+            '<b>Use it:</b> write one clear job per tool, mark read-only and irreversible tools, and test with real requests to see which tool gets picked.'
+        ],
+        mcp: [
+            '<b>Name it:</b> <i>MCP</i>, the Model Context Protocol: an open standard that lets a harness connect to tool and data servers in one common way, like a universal plug.',
+            '<b>In the real world:</b> one server can serve many apps, so tools are easier to share. But every server you connect adds power and risk: it can read your data, and its tool descriptions and results go straight into the model\'s context.',
+            '<b>Use it:</b> connect only servers you trust, give each the least access its job needs (read only where possible), and review what a new server can do before you plug it in.'
+        ],
+        toolerrors: [
+            '<b>Name it:</b> <i>tool error handling</i>: what the harness does when a tool call fails, returns too much, or should never have been made.',
+            '<b>In the real world:</b> the model can only act on what the harness shows it. Temporary faults deserve a limited retry, fixable mistakes should go back to the model, huge outputs must be trimmed, and forbidden calls must be refused by the harness itself.',
+            '<b>Use it:</b> validate every call against the registered tools and permissions, cap retries and output size, and write error messages the model can act on.'
+        ],
         agentloop: [
             '<b>Name it:</b> the <i>agent loop</i>: the harness gives the model the goal and the history, the model picks a tool and its inputs, the harness runs the tool, adds the result to the history, and checks whether to stop.',
             '<b>In the real world:</b> coding agents and research agents all run this loop, often dozens of times. The model only <i>proposes</i> actions. The harness is the part that actually does things, remembers, and enforces limits.',
@@ -423,6 +467,9 @@
         speed:      { dungeon: 'hood',   title: 'Tokens per second',         where: 'The Speed Run',        line: 'Match speed to the job: wait for the first token, streaming rate, or total throughput.' },
         cache:      { dungeon: 'hood',   title: 'Caching',                   where: 'The Cache Vault',      line: 'Put stable content first in a prompt so the cache can reuse it.' },
         guardrails: { dungeon: 'hood',   title: 'Alignment and guardrails',  where: 'The Guardrail Gate',   line: 'Uncensored removes a model\'s refusals, not the risk. Add protection somewhere else.' },
+        toolspec:   { dungeon: 'tools',   title: 'Tool descriptions',      where: 'The Tool Shelf',       line: 'A model picks a tool by its description. Be specific, and say what it is not for.' },
+        mcp:        { dungeon: 'tools',   title: 'MCP and permissions',    where: 'The Socket Hall',      line: 'MCP is a standard plug. Trust each server carefully and give it only the access it needs.' },
+        toolerrors: { dungeon: 'tools',   title: 'Tool errors',            where: 'The Error Pit',        line: 'Retry the temporary, return the fixable, trim the huge and refuse the forbidden.' },
         agentloop:  { dungeon: 'agentic', title: 'The agent loop',        where: 'The Agent Loop',       line: 'The model proposes. The harness runs the tool, remembers the result and enforces the limits.' },
         guards:     { dungeon: 'agentic', title: 'Agent guardrails',       where: 'The Runaway',          line: 'Layer step caps, loop detection and spending controls, and size them for real work.' },
         autonomy:   { dungeon: 'agentic', title: 'Levels of autonomy',     where: 'The Autonomy Gate',    line: 'Automatic for the safe and reversible, a human for the hard to undo, never for the catastrophic.' },

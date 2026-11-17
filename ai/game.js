@@ -130,7 +130,8 @@
         speed: '#ffd166', cache: '#4cc9f0', guardgate: '#ef476f',
         sysprompt: '#06d6a0', context: '#b18cff', tokenunits: '#ff9f43',
         verify: '#ef476f', doors: '#ffd166', poison: '#b18cff',
-        agentloop: '#4cc9f0', guards: '#ff9f43', autonomy: '#ef476f'
+        agentloop: '#4cc9f0', guards: '#ff9f43', autonomy: '#ef476f',
+        shelf: '#ffd166', socket: '#06d6a0', pit: '#ff6b9d'
     };
     Object.keys(GOLEM_RUNE).forEach(function (k) { sprite['golem_' + k] = makeSprite(SPRITES.golem, { r: GOLEM_RUNE[k] }); });
 
@@ -985,7 +986,8 @@
         speed: 'speed', cache: 'cache', guardgate: 'guardrails',
         sysprompt: 'sysprompt', context: 'context', tokenunits: 'tokenunits',
         verify: 'hallucination', doors: 'grounding', poison: 'injection',
-        agentloop: 'agentloop', guards: 'guards', autonomy: 'autonomy'
+        agentloop: 'agentloop', guards: 'guards', autonomy: 'autonomy',
+        shelf: 'toolspec', socket: 'mcp', pit: 'toolerrors'
     };
 
     function openPuzzle() {
@@ -1372,7 +1374,7 @@
         var missing = (d.requires || []).filter(function (id) { return !S.progress.cleared[id]; });
         if (missing.length && !done) {
             var text;
-            if (d.requires.length > 1) {
+            if (missing.length > 1) {
                 text = '\uD83D\uDD12 ' + tr('Clear all of The Basics first');
             } else {
                 var pre = dungeonById(missing[0]);

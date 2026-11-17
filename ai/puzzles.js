@@ -785,7 +785,108 @@
         { text: 'Delete the production database.', answer: 'never', why: 'An agent should not hold a credential that can do this at all. If it must happen, a human does it through a separate, audited process.' }
     ];
 
+
+    /* ================================================================ */
+    /* Dungeon: Tools and MCP                                            */
+    /* ================================================================ */
+
+    // ---- Chamber 1: the Tool Shelf (a model chooses a tool by reading its description) ----
+    var SHELF_REQUESTS = [
+        { id: 'r1', text: 'Where is my parcel? Order 4521.', tool: 'lookup' },
+        { id: 'r2', text: 'I want my money back for order 3310.', tool: 'refund' },
+        { id: 'r3', text: 'Has order 5502 shipped yet?', tool: 'lookup' },
+        { id: 'r4', text: 'Please refund order 2087, it arrived broken.', tool: 'refund' }
+    ];
+    // `covers`: the requests the model would route to this tool, given that description
+    var SHELF_TOOLS = [
+        {
+            id: 'lookup', name: 'lookup_order', job: 'Reads an order\'s status.',
+            options: [
+                { id: 'vague', text: 'Order stuff.', covers: [] },
+                { id: 'broad', text: 'Use this for anything to do with an order.', covers: ['r1', 'r2', 'r3', 'r4'] },
+                { id: 'precise', text: 'Read-only. Finds an order\'s status and delivery date from its number.', covers: ['r1', 'r3'] }
+            ]
+        },
+        {
+            id: 'refund', name: 'refund_order', job: 'Gives money back. Cannot be undone.',
+            options: [
+                { id: 'vague', text: 'Handles orders.', covers: [] },
+                { id: 'broad', text: 'Use this to sort out any problem with an order.', covers: ['r1', 'r2', 'r3', 'r4'] },
+                { id: 'precise', text: 'Issues a refund. Use only when the customer asks for their money back.', covers: ['r2', 'r4'] }
+            ]
+        }
+    ];
+    function shelfOption(toolId, optId) {
+        var t = SHELF_TOOLS.filter(function (x) { return x.id === toolId; })[0];
+        return t.options.filter(function (o) { return o.id === optId; })[0];
+    }
+    // choice: { lookup: optionId, refund: optionId }
+    function routeShelf(choice) {
+        return SHELF_REQUESTS.map(function (rq) {
+            var hits = SHELF_TOOLS.filter(function (t) { return shelfOption(t.id, choice[t.id]).covers.indexOf(rq.id) >= 0; })
+                .map(function (t) { return t.id; });
+            var kind;
+            var called = null;
+            if (hits.length === 0) { kind = 'none'; }
+            else if (hits.length === 1) { called = hits[0]; kind = called === rq.tool ? 'right' : 'wrong'; }
+            else if (rq.tool === 'refund') { kind = 'unsure'; }  // two tools sound right: the model has to guess
+            else { called = 'refund'; kind = 'wrong'; }           // asked for a status, but the risky tool also sounds right
+            return { request: rq, called: called, kind: kind, ok: kind === 'right' };
+        });
+    }
+    function shelfOk(choice) { return routeShelf(choice).every(function (r) { return r.ok; }); }
+
+    // ---- Chamber 2: the Socket Hall (MCP servers and what each may do) ----
+    var SOCKET_LEVELS = [
+        { id: 0, label: 'Off' },
+        { id: 1, label: 'Read only' },
+        { id: 2, label: 'Read and write' }
+    ];
+    var SOCKET_SERVERS = [
+        { id: 'wiki', name: 'Company wiki', need: 1, job: 'Summarise the leave policy.', why: 'Reading is all the job needs. Write access would let a confused agent edit the policy.' },
+        { id: 'calendar', name: 'Calendar', need: 2, job: 'Book a meeting with Sam.', why: 'Booking creates an event, so this one needs write access.' },
+        { id: 'files', name: 'Project files', need: 1, job: 'Find where the login is coded.', why: 'Searching code only needs to read it.' },
+        { id: 'database', name: 'Production database', need: 1, job: 'Report last month\'s signups.', why: 'A report only needs to read. Write access to production is a disaster waiting to happen.' },
+        { id: 'freebie', name: 'Free tools from a stranger\'s website', need: 0, job: 'No job needs it.', why: 'Nothing needs it, and you cannot vouch for what it does. An untrusted server stays off.' }
+    ];
+    // levels: { serverId: 0 | 1 | 2 }
+    function socketResult(levels) {
+        return SOCKET_SERVERS.map(function (sv) {
+            var lv = levels[sv.id] || 0;
+            var kind = lv < sv.need ? 'short' : (lv > sv.need ? 'over' : 'exact');
+            return { server: sv, level: lv, kind: kind, ok: kind === 'exact' };
+        });
+    }
+    function socketOk(levels) { return socketResult(levels).every(function (r) { return r.ok; }); }
+
+    // ---- Chamber 3: the Error Pit (what the harness does when a tool call goes wrong) ----
+    var PIT_OPTIONS = [
+        { id: 'retry', label: 'Retry a few times, then stop' },
+        { id: 'tell', label: 'Give the error to the model' },
+        { id: 'trim', label: 'Cut it down first' },
+        { id: 'deny', label: 'Refuse and do not run it' }
+    ];
+    var PIT_ITEMS = [
+        { text: 'The weather service does not answer. It times out once.', answer: 'retry', why: 'Timeouts are often temporary. Retry a limited number of times, so a dead service cannot keep an agent busy forever.' },
+        { text: 'The tool replies: "file not found: reports/q3.csv".', answer: 'tell', why: 'The model can fix this itself, perhaps by listing the folder. Hiding errors from it only makes it guess.' },
+        { text: 'The tool returns a 3 MB log file.', answer: 'trim', why: 'Pasting it all into the history would flood the context window and push out the instructions. Truncate or summarise it first.' },
+        { text: 'The model asks for a tool called "delete_everything". No such tool exists.', answer: 'deny', why: 'The harness only runs tools it has registered. Never run a name the model invented.' },
+        { text: 'The tool replies: "recipient is required" because the model left the address out.', answer: 'tell', why: 'This is a mistake the model can correct. Send the message back and let it try again.' },
+        { text: 'The model asks to read ~/.ssh/id_rsa, which is outside its allowed folder.', answer: 'deny', why: 'A permission check belongs in the harness. Refuse the call, say why, and keep the secret out of the history.' }
+    ];
+
     var api = {
+        SHELF_REQUESTS: SHELF_REQUESTS,
+        SHELF_TOOLS: SHELF_TOOLS,
+        shelfOption: shelfOption,
+        routeShelf: routeShelf,
+        shelfOk: shelfOk,
+        SOCKET_LEVELS: SOCKET_LEVELS,
+        SOCKET_SERVERS: SOCKET_SERVERS,
+        socketResult: socketResult,
+        socketOk: socketOk,
+        PIT_OPTIONS: PIT_OPTIONS,
+        PIT_ITEMS: PIT_ITEMS,
         LOOP_STEPS: LOOP_STEPS,
         LOOP_START_ORDER: LOOP_START_ORDER,
         loopCheck: loopCheck,

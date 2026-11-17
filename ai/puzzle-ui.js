@@ -1439,6 +1439,136 @@
             });
     }
 
+
+    /* ---------------------------------------------------------------- */
+    /* Tools and MCP, chamber 1: the Tool Shelf                          */
+    /* ---------------------------------------------------------------- */
+    function buildShelf(host, cb) {
+        var wrap = panelFrame('The Tool Shelf',
+            tr('A model never sees a tool\'s code. It picks a tool by reading its <b>description</b>. Choose a description for each tool, then see where the model sends four customer requests.'), cb);
+        var choice = { lookup: 'vague', refund: 'vague' };
+        var shelf = h('div', { class: 'shelf' });
+        var results = h('div', { class: 'puz-result', 'aria-live': 'polite' });
+
+        function renderShelf() {
+            clear(shelf);
+            P.SHELF_TOOLS.forEach(function (t) {
+                var box = h('div', { class: 'q' }, [
+                    h('p', { class: 'q-text', raw: t.name + ': ' + t.job }),
+                    h('p', { class: 'small', text: 'Pick its description:' })
+                ]);
+                var btns = h('div', { class: 'q-btns' });
+                t.options.forEach(function (o) {
+                    var on = choice[t.id] === o.id;
+                    var b = h('button', { class: 'ghost tool' + (on ? ' on' : ''), type: 'button', 'aria-pressed': on ? 'true' : 'false', text: o.text });
+                    b.addEventListener('click', function () { choice[t.id] = o.id; clear(results); renderShelf(); });
+                    btns.appendChild(b);
+                });
+                box.appendChild(btns);
+                shelf.appendChild(box);
+            });
+        }
+
+        function run() {
+            clear(results);
+            var rows = P.routeShelf(choice);
+            var good = 0;
+            var nameOf = function (id) { return P.SHELF_TOOLS.filter(function (t) { return t.id === id; })[0].name; };
+            rows.forEach(function (r) {
+                if (r.ok) { good++; }
+                var msg;
+                if (r.kind === 'right') { msg = tr('✓ "{q}" went to {tool}.', { q: r.request.text, tool: nameOf(r.called) }); }
+                else if (r.kind === 'none') { msg = tr('✗ "{q}" matched no tool, so the model answered without one and guessed.', { q: r.request.text }); }
+                else if (r.kind === 'unsure') { msg = tr('✗ "{q}" sounded like both tools, so the model had to guess between them.', { q: r.request.text }); }
+                else { msg = tr('✗ "{q}" went to {tool}, which is the wrong tool.', { q: r.request.text, tool: nameOf(r.called) }); }
+                results.appendChild(h('p', { class: 'q-why ' + (r.ok ? 'ok' : 'wrong'), raw: msg }));
+            });
+            results.appendChild(h('p', { class: 'score ' + (good === rows.length ? 'good' : 'bad'), raw: tr('{good} / {total} requests routed correctly', { good: good, total: rows.length }) }));
+            if (good === rows.length) {
+                results.appendChild(h('p', { text: 'The shelf is in order. A good description says what the tool does, what it is for, and what it is not for.' }));
+                results.appendChild(openDoorButton(cb));
+            } else {
+                results.appendChild(h('p', { text: 'Rewrite the descriptions and run it again. A vague one gives the model nothing to go on, and a broad one makes two tools sound alike.' }));
+            }
+        }
+
+        renderShelf();
+        wrap.appendChild(shelf);
+        wrap.appendChild(h('button', { class: 'go', type: 'button', text: 'Send the requests', on: { click: run } }));
+        wrap.appendChild(results);
+        host.appendChild(wrap);
+    }
+
+    /* ---------------------------------------------------------------- */
+    /* Tools and MCP, chamber 2: the Socket Hall                         */
+    /* ---------------------------------------------------------------- */
+    function buildSocket(host, cb) {
+        var wrap = panelFrame('The Socket Hall',
+            tr('<b>MCP</b> (Model Context Protocol) is a standard plug: any MCP server can connect to any MCP-aware harness. Each server also brings its own power. Set how much each one may do, giving it <b>exactly what its job needs</b>.'), cb);
+        var levels = {};
+        P.SOCKET_SERVERS.forEach(function (sv) { levels[sv.id] = 0; });
+        var board = h('div', { class: 'socket-board' });
+        var results = h('div', { class: 'puz-result', 'aria-live': 'polite' });
+
+        function renderBoard() {
+            clear(board);
+            P.SOCKET_SERVERS.forEach(function (sv) {
+                var box = h('div', { class: 'q' }, [
+                    h('p', { class: 'q-text', raw: sv.name }),
+                    h('p', { class: 'small', raw: tr('Job: {job}', { job: sv.job }) })
+                ]);
+                var btns = h('div', { class: 'q-btns' });
+                P.SOCKET_LEVELS.forEach(function (lv) {
+                    var on = levels[sv.id] === lv.id;
+                    var b = h('button', { class: 'ghost tool' + (on ? ' on' : ''), type: 'button', 'aria-pressed': on ? 'true' : 'false', text: lv.label });
+                    b.addEventListener('click', function () { levels[sv.id] = lv.id; clear(results); renderBoard(); });
+                    btns.appendChild(b);
+                });
+                box.appendChild(btns);
+                board.appendChild(box);
+            });
+        }
+
+        function run() {
+            clear(results);
+            var rows = P.socketResult(levels);
+            var good = 0;
+            rows.forEach(function (r) {
+                if (r.ok) { good++; }
+                var head = r.kind === 'exact' ? '✓ ' : '✗ ';
+                var detail = r.kind === 'short' ? tr('Too little: the job cannot be done.') + ' '
+                    : (r.kind === 'over' ? tr('Too much: more power than the job needs.') + ' ' : '');
+                results.appendChild(h('p', { class: 'q-why ' + (r.ok ? 'ok' : 'wrong'), raw: head + r.server.name + '. ' + detail + r.server.why }));
+            });
+            results.appendChild(h('p', { class: 'score ' + (good === rows.length ? 'good' : 'bad'), raw: tr('{good} / {total} servers set correctly', { good: good, total: rows.length }) }));
+            if (good === rows.length) {
+                results.appendChild(h('p', { text: 'Every socket is set. MCP makes connecting easy, so the question that matters is how much to trust each thing you plug in.' }));
+                results.appendChild(openDoorButton(cb));
+            } else {
+                results.appendChild(h('p', { text: 'Adjust the permissions and test again.' }));
+            }
+        }
+
+        renderBoard();
+        wrap.appendChild(board);
+        wrap.appendChild(h('button', { class: 'go', type: 'button', text: 'Connect and test', on: { click: run } }));
+        wrap.appendChild(results);
+        host.appendChild(wrap);
+    }
+
+    /* ---------------------------------------------------------------- */
+    /* Tools and MCP, chamber 3: the Error Pit                           */
+    /* ---------------------------------------------------------------- */
+    function buildPit(host, cb) {
+        quizPanel(host, cb, 'The Error Pit',
+            tr('Tool calls go wrong all the time. For each failure, decide what the <b>harness</b> should do. Get 5 of {total} right.', { total: P.PIT_ITEMS.length }),
+            {
+                options: P.PIT_OPTIONS,
+                items: P.PIT_ITEMS, pass: 5,
+                passMsg: 'You climb out of the pit. The harness is where failures are handled, retried, trimmed or refused.'
+            });
+    }
+
     /* ---------------------------------------------------------------- */
     /* public API                                                        */
     /* ---------------------------------------------------------------- */
@@ -1470,6 +1600,9 @@
             else if (kind === 'agentloop') { buildAgentLoop(host, cb); }
             else if (kind === 'guards') { buildGuards(host, cb); }
             else if (kind === 'autonomy') { buildAutonomy(host, cb); }
+            else if (kind === 'shelf') { buildShelf(host, cb); }
+            else if (kind === 'socket') { buildSocket(host, cb); }
+            else if (kind === 'pit') { buildPit(host, cb); }
         },
         close: function (silent) {
             if (!current) { return; }
