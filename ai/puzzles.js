@@ -942,7 +942,83 @@
         return { rows: rows, tokens: tokens, over: over, ok: !over && rows.every(function (r) { return r.ok; }) };
     }
 
+
+    /* ================================================================ */
+    /* Dungeon: Jailbreaks and Safeguards                                */
+    /* ================================================================ */
+
+    // ---- Chamber 1: the Break-In (recognise the pattern, not write it) ----
+    var ATTACK_OPTIONS = [
+        { id: 'roleplay', label: 'Role-play framing' },
+        { id: 'override', label: 'Instruction override' },
+        { id: 'pressure', label: 'Gradual pressure' },
+        { id: 'hidden', label: 'Hidden in data' },
+        { id: 'authority', label: 'Claimed authority' }
+    ];
+    var ATTACK_ITEMS = [
+        { text: 'The user asks the model to play a character who has no rules, and to answer as that character.', answer: 'roleplay', why: 'The forbidden request is wrapped in fiction. Safety has to look at what is being asked for, not the story around it.' },
+        { text: 'A message says to ignore everything said so far and follow new instructions instead.', answer: 'override', why: 'It tries to replace the model\'s instructions with its own. Rules from the developer should outrank text from users or documents.' },
+        { text: 'Over twenty messages the user asks for slightly more each time, until the answer is one that would have been refused if asked at once.', answer: 'pressure', why: 'No single message looks bad. Safeguards have to watch the whole conversation, not only the latest message.' },
+        { text: 'A web page the agent reads contains invisible text telling it to send files to a stranger.', answer: 'hidden', why: 'The attack sits inside data the agent reads, not in anything the user typed. Treat outside text as untrusted.' },
+        { text: 'A message says it comes from the developer and that the safety rules are switched off for testing.', answer: 'authority', why: 'Anyone can type a claim. Real permissions come from how the system is set up, not from what a message says about itself.' },
+        { text: 'A PDF the user uploaded has white text on a white page, addressed to the AI.', answer: 'hidden', why: 'The model reads text a person cannot see. Treat every document as data, never as instructions.' }
+    ];
+
+    // ---- Chamber 2: the Layered Gate (defence in depth) ----
+    var LAYER_MAX = 4; // each layer adds cost or friction
+    var LAYERS = [
+        { id: 'training', name: 'Safety training in the model', stops: ['roleplay', 'override', 'authority'] },
+        { id: 'input', name: 'A filter on what comes in', stops: ['override', 'hidden', 'authority'] },
+        { id: 'output', name: 'A filter on what goes out', stops: ['roleplay', 'pressure', 'hidden'] },
+        { id: 'perms', name: 'Limits on what tools can do', stops: ['hidden', 'authority', 'pressure'] },
+        { id: 'human', name: 'A human approves risky actions', stops: ['pressure', 'hidden', 'authority'] }
+    ];
+    var LAYER_ATTACKS = [
+        { id: 'roleplay', name: 'Role-play framing' },
+        { id: 'override', name: 'Instruction override' },
+        { id: 'pressure', name: 'Gradual pressure' },
+        { id: 'hidden', name: 'Hidden in data' },
+        { id: 'authority', name: 'Claimed authority' }
+    ];
+    // chosen: array of layer ids
+    function layerResult(chosen) {
+        var rows = LAYER_ATTACKS.map(function (a) {
+            var n = LAYERS.filter(function (l) { return chosen.indexOf(l.id) >= 0 && l.stops.indexOf(a.id) >= 0; }).length;
+            return { attack: a, count: n, ok: n >= 2 };
+        });
+        var tooMany = chosen.length > LAYER_MAX;
+        return { rows: rows, tooMany: tooMany, ok: !tooMany && rows.every(function (r) { return r.ok; }) };
+    }
+
+    // ---- Chamber 3: the Workshop (normal, uncensored, abliterated) ----
+    var KIND_OPTIONS = [
+        { id: 'normal', label: 'Normal model' },
+        { id: 'uncensored', label: 'Uncensored model' },
+        { id: 'abliterated', label: 'Abliterated model' }
+    ];
+    var JOB_OPTIONS = [
+        { id: 'normal', label: 'Normal model' },
+        { id: 'uncensored', label: 'Uncensored model, with my own safeguards' }
+    ];
+    var WORKSHOP_ITEMS = [
+        { text: 'Which is it? Its habit of refusing harmful requests was taught during training, using human feedback.', answer: 'normal', options: KIND_OPTIONS, why: 'This is the usual way a model gets its safeguards: trained in, then checked.' },
+        { text: 'Which is it? It was fine-tuned on examples with the refusals removed, so it declines far less.', answer: 'uncensored', options: KIND_OPTIONS, why: 'Changing the training data changes the behaviour. It is not smarter, it just refuses less.' },
+        { text: 'Which is it? A direction inside the model that is linked to refusing was found and cut out of its weights.', answer: 'abliterated', options: KIND_OPTIONS, why: 'The refusal behaviour is edited out afterwards, without retraining. It can also damage other abilities.' },
+        { text: 'Which would you use for a public chatbot for school pupils?', answer: 'normal', options: JOB_OPTIONS, why: 'Anyone can talk to it, including children. Keep the safety training and add filters on top.' },
+        { text: 'Which would you use for a private research lab on an offline machine that only the security team can reach?', answer: 'uncensored', options: JOB_OPTIONS, why: 'A closed setting with trained users and your own safeguards is where fewer refusals can make sense.' },
+        { text: 'Which would you use for an agent that browses the web and can read company email?', answer: 'normal', options: JOB_OPTIONS, why: 'It reads untrusted text and holds real access. Removing its safety training makes an injected instruction far more dangerous.' }
+    ];
+
     var api = {
+        ATTACK_OPTIONS: ATTACK_OPTIONS,
+        ATTACK_ITEMS: ATTACK_ITEMS,
+        LAYER_MAX: LAYER_MAX,
+        LAYERS: LAYERS,
+        LAYER_ATTACKS: LAYER_ATTACKS,
+        layerResult: layerResult,
+        KIND_OPTIONS: KIND_OPTIONS,
+        JOB_OPTIONS: JOB_OPTIONS,
+        WORKSHOP_ITEMS: WORKSHOP_ITEMS,
         TEAM_OPTIONS: TEAM_OPTIONS,
         TEAM_ITEMS: TEAM_ITEMS,
         FILE_OPTIONS: FILE_OPTIONS,

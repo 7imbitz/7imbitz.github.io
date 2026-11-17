@@ -139,6 +139,23 @@
                     '<b>Teams:</b> use several agents when the job is big, independent or risky: split the work, run parts in parallel, and have a separate reviewer check it. A tiny job needs one agent.',
                     '<b>Files:</b> identity and core rules are always loaded (soul), methods are loaded when needed (skills), and facts learned over time are kept between sessions (memory). Secrets are never stored.',
                     '<b>Memory:</b> every entry costs tokens every session, so keep what is useful, current and safe, and prune the rest.'],
+                ['<span class="tip">Next: Jailbreaks and Safeguards. How do attacks talk a model out of its rules, and how do you defend against them?</span>']
+            ],
+            clearButton: 'Back to the dungeons'
+        },
+        safe: {
+            intro: [
+                ['People try to talk models out of their rules. Learn how these <b>jailbreaks</b> work, why defences come in <b>layers</b>, and what it really means when a model is <b>uncensored</b> or <b>abliterated</b>.'],
+                ['Three chambers lie ahead. You will study the attacks only to defend against them.',
+                    '<span class="tip">Walk into a golem to challenge it.</span>']
+            ],
+            introButton: 'Enter the dungeon',
+            clearTitle: 'Jailbreaks and Safeguards cleared!',
+            clear: [
+                ['<b>Loot: the Aegis.</b>',
+                    '<b>Jailbreaks:</b> role-play, overrides, gradual pressure, hidden text and false authority all try to move a model off its rules. Learn the patterns.',
+                    '<b>Layers:</b> no safeguard is perfect, so stack training, filters, tool limits and human approval until no attack depends on just one.',
+                    '<b>Modified models:</b> uncensored models are trained to refuse less, and abliterated models have refusal edited out of the weights. Both move the safety job to you.'],
                 ['<span class="tip">Try the Forge next. Local models are tuned with a <b>modelfile</b>: temperature, context length (num_ctx) and the system prompt.</span>']
             ],
             clearButton: 'Back to the dungeons'
@@ -253,6 +270,18 @@
         runaway: [
             ['Four agents are about to go wrong: one repeats itself, one is doing real work, one tries a big purchase, and one wanders aimlessly.',
                 'Set the limits in the harness so that every runaway is stopped, but the genuine task is allowed to finish.', '<span class="tip">Walk into a golem to challenge it.</span>']
+        ],
+        breakin: [
+            ['A jailbreak is an attempt to talk a model out of its rules. Many of them follow a few patterns.',
+                'Match each attempt to its pattern. You are learning to spot them, not to write them.', '<span class="tip">Walk into a golem to challenge it.</span>']
+        ],
+        layergate: [
+            ['Any single safeguard can be fooled or can fail. Security people stack several, so that what slips past one is caught by another. This is called <b>defence in depth</b>.',
+                'Build a gate where every attack meets at least two layers, without piling on every layer there is.', '<span class="tip">Walk into a golem to challenge it.</span>']
+        ],
+        workshop: [
+            ['Some models are changed so that they refuse less. The two names you will meet are <b>uncensored</b> and <b>abliterated</b>.',
+                'Learn how they differ from a normal model, and when it makes sense to use one.', '<span class="tip">Walk into a golem to challenge it.</span>']
         ],
         teamtable: [
             ['A team of agents can split a big job, work on parts at the same time, and check each other. It also costs more and needs coordinating.',
@@ -415,6 +444,21 @@
             '<b>In the real world:</b> real prices change, and local has hidden costs: setup time, maintenance, and hardware that can sit idle.',
             '<b>Use it:</b> estimate your volume first. A few requests a day rarely justify hardware. Millions might.'
         ],
+        jailbreaks: [
+            '<b>Name it:</b> a <i>jailbreak</i>: an attempt to make a model ignore its safety rules, usually through words alone. Common patterns are role-play framing, instruction overrides, gradual pressure over many messages, text hidden in documents, and false claims of authority.',
+            '<b>In the real world:</b> no model is fully immune, and new wordings appear all the time, so it is a cat-and-mouse game. Attacks that hide inside data an agent reads are called <i>indirect prompt injection</i>, and they are the most dangerous for agents.',
+            '<b>Use it:</b> never rely on a single instruction to keep a system safe, treat all outside text as untrusted, watch whole conversations rather than single messages, and report weaknesses you find.'
+        ],
+        layers: [
+            '<b>Name it:</b> <i>defence in depth</i>: several independent safeguards stacked together, such as safety training, input filters, output filters, limits on tool permissions and human approval.',
+            '<b>In the real world:</b> each layer has gaps. Filters miss clever wording, training can be bypassed, and humans get tired. A good design means one failure is never enough. Layers also add cost and friction, so choose them with care.',
+            '<b>Use it:</b> list the ways your system could be attacked, check that each one meets at least two safeguards, and put the strongest limits on what an agent can do, not just on what it can say.'
+        ],
+        modifiedmodels: [
+            '<b>Name it:</b> an <i>uncensored</i> model is fine-tuned on data without refusals, so it declines far less. An <i>abliterated</i> model has the direction that drives its refusals found and removed from its weights, without retraining.',
+            '<b>In the real world:</b> neither is smarter than the original. Abliteration can also dull other abilities. Both remove a safeguard rather than adding capability, and they move the safety job from the model to you.',
+            '<b>Use it:</b> keep the safety training for anything public or anything with real access, and use a modified model only in a closed setting where you control who can use it and you add your own safeguards.'
+        ],
         teams: [
             '<b>Name it:</b> a <i>multi-agent team</i>: several agents with different roles, such as an orchestrator that splits the job, workers that do the parts, and a reviewer that checks the result.',
             '<b>In the real world:</b> teams help when parts are independent or when a fresh pair of eyes catches mistakes. They also cost more tokens, add delay, and can pass errors along. For small jobs a single agent is better.',
@@ -511,6 +555,9 @@
         speed:      { dungeon: 'hood',   title: 'Tokens per second',         where: 'The Speed Run',        line: 'Match speed to the job: wait for the first token, streaming rate, or total throughput.' },
         cache:      { dungeon: 'hood',   title: 'Caching',                   where: 'The Cache Vault',      line: 'Put stable content first in a prompt so the cache can reuse it.' },
         guardrails: { dungeon: 'hood',   title: 'Alignment and guardrails',  where: 'The Guardrail Gate',   line: 'Uncensored removes a model\'s refusals, not the risk. Add protection somewhere else.' },
+        jailbreaks: { dungeon: 'safe',    title: 'Jailbreaks',             where: 'The Break-In',         line: 'Role-play, overrides, pressure, hidden text and false authority. Learn the patterns.' },
+        layers:     { dungeon: 'safe',    title: 'Defence in depth',       where: 'The Layered Gate',     line: 'Stack safeguards so no attack depends on a single one.' },
+        modifiedmodels: { dungeon: 'safe', title: 'Uncensored and abliterated', where: 'The Workshop',   line: 'Both remove a safeguard. Use them only where you can carry the safety job yourself.' },
         teams:      { dungeon: 'teams',   title: 'Agent teams',            where: 'The Team Table',       line: 'Use a team for big, independent or risky jobs. A small job needs one agent.' },
         agentfiles: { dungeon: 'teams',   title: 'Soul, skills and memory', where: 'The Instruction Scrolls', line: 'Identity always loaded, skills on demand, memory between sessions, secrets never.' },
         agentmemory: { dungeon: 'teams',  title: 'Agent memory',           where: 'The Memory File',      line: 'Keep notes short, current and safe. Prune what is stale, duplicated or secret.' },

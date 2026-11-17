@@ -314,6 +314,12 @@
         chamber(2, 'memfile', 'The Memory File', 'Keep what is worth remembering, within the token budget.', 'memfile')
     ];
 
+    var SAFE_ROOMS = [
+        chamber(0, 'breakin', 'The Break-In', 'Recognise the common ways attackers talk a model out of its rules.', 'attacks'),
+        chamber(1, 'layergate', 'The Layered Gate', 'Layer safeguards so that no attack depends on a single one.', 'layers'),
+        chamber(2, 'workshop', 'The Workshop', 'Tell normal, uncensored and abliterated models apart, and choose between them.', 'modified')
+    ];
+
     var LOCAL_ROOMS = [
         chamber(0, 'packing', 'The Packing Room', 'Fit the best model into each machine\'s memory.', 'packing'),
         chamber(1, 'datagate', 'The Data Gate', 'Decide where each job should run: local or cloud.', 'datagate'),
@@ -456,6 +462,20 @@
             blurb: 'When to use a team of agents, what soul, skills and memory files are for, and what to remember.',
             thumb: 'scrolls',
             rooms: TEAMS_ROOMS
+        },
+        {
+            id: 'safe',
+            title: 'Jailbreaks and Safeguards',
+            group: 'bonus',
+            difficulty: 'hard',
+            unit: 'Chamber',
+            hud: 'basic',
+            theme: 'plum',
+            ready: true,
+            requires: ['ai', 'models', 'talk', 'trust', 'local', 'hood'], // bonus: after the Basics and Under the Hood
+            blurb: 'How jailbreaks work, why safeguards come in layers, and what uncensored and abliterated models really are.',
+            thumb: 'layergate',
+            rooms: SAFE_ROOMS
         },
         {
             id: 'forge',

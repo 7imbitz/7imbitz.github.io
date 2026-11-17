@@ -132,7 +132,8 @@
         verify: '#ef476f', doors: '#ffd166', poison: '#b18cff',
         agentloop: '#4cc9f0', guards: '#ff9f43', autonomy: '#ef476f',
         shelf: '#ffd166', socket: '#06d6a0', pit: '#ff6b9d',
-        team: '#4cc9f0', files: '#b18cff', memfile: '#ff9f43'
+        team: '#4cc9f0', files: '#b18cff', memfile: '#ff9f43',
+        attacks: '#ef476f', layers: '#06d6a0', modified: '#ffd166'
     };
     Object.keys(GOLEM_RUNE).forEach(function (k) { sprite['golem_' + k] = makeSprite(SPRITES.golem, { r: GOLEM_RUNE[k] }); });
 
@@ -989,7 +990,8 @@
         verify: 'hallucination', doors: 'grounding', poison: 'injection',
         agentloop: 'agentloop', guards: 'guards', autonomy: 'autonomy',
         shelf: 'toolspec', socket: 'mcp', pit: 'toolerrors',
-        team: 'teams', files: 'agentfiles', memfile: 'agentmemory'
+        team: 'teams', files: 'agentfiles', memfile: 'agentmemory',
+        attacks: 'jailbreaks', layers: 'layers', modified: 'modifiedmodels'
     };
 
     function openPuzzle() {

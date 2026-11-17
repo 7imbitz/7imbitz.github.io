@@ -1647,6 +1647,84 @@
         host.appendChild(wrap);
     }
 
+
+    /* ---------------------------------------------------------------- */
+    /* Jailbreaks and Safeguards                                         */
+    /* ---------------------------------------------------------------- */
+    function buildAttacks(host, cb) {
+        quizPanel(host, cb, 'The Break-In',
+            tr('Attackers try to talk a model out of its rules. You do not need to write attacks to defend against them. Learn to <b>recognise the pattern</b>. Get 5 of {total} right.', { total: P.ATTACK_ITEMS.length }),
+            {
+                options: P.ATTACK_OPTIONS,
+                items: P.ATTACK_ITEMS, pass: 5,
+                passMsg: 'You can name the trick. Knowing the pattern is the first step in defending against it.'
+            });
+    }
+
+    function buildLayers(host, cb) {
+        var wrap = panelFrame('The Layered Gate',
+            tr('No single safeguard stops everything, and any one of them can fail. Choose the layers for your gate, up to {max}, so that <b>every attack is stopped by at least two</b> of them.', { max: P.LAYER_MAX }), cb);
+        var chosen = [];
+        var board = h('div', { class: 'layer-board' });
+        var meter = h('p', { class: 'ctx-state', 'aria-live': 'polite' });
+        var results = h('div', { class: 'puz-result', 'aria-live': 'polite' });
+
+        function render() {
+            clear(board);
+            P.LAYERS.forEach(function (l) {
+                var on = chosen.indexOf(l.id) >= 0;
+                var b = h('button', { class: 'ghost tool' + (on ? ' on' : ''), type: 'button', 'aria-pressed': on ? 'true' : 'false', text: l.name });
+                b.addEventListener('click', function () {
+                    var i = chosen.indexOf(l.id);
+                    if (i >= 0) { chosen.splice(i, 1); } else { chosen.push(l.id); }
+                    clear(results);
+                    render();
+                });
+                board.appendChild(b);
+            });
+            meter.textContent = tr('Layers: {n} of {max}', { n: chosen.length, max: P.LAYER_MAX });
+            meter.className = 'ctx-state ' + (chosen.length > P.LAYER_MAX ? 'bad' : 'good');
+        }
+
+        function run() {
+            clear(results);
+            var r = P.layerResult(chosen);
+            var good = 0;
+            r.rows.forEach(function (row) {
+                if (row.ok) { good++; }
+                var msg = row.count >= 2 ? tr('✓ {attack}: stopped by {n} layers.', { attack: row.attack.name, n: row.count })
+                    : (row.count === 1 ? tr('✗ {attack}: only one layer stops it. If that layer slips, it gets through.', { attack: row.attack.name })
+                        : tr('✗ {attack}: nothing stops it.', { attack: row.attack.name }));
+                results.appendChild(h('p', { class: 'q-why ' + (row.ok ? 'ok' : 'wrong'), raw: msg }));
+            });
+            results.appendChild(h('p', { class: 'score ' + (r.ok ? 'good' : 'bad'), raw: tr('{good} / {total} attacks covered twice', { good: good, total: r.rows.length }) }));
+            if (r.tooMany) { results.appendChild(h('p', { text: 'That is too many layers. Each one adds cost and friction, so choose the ones that cover the gaps.' })); }
+            if (r.ok) {
+                results.appendChild(h('p', { text: 'The gate holds. Layers cover each other\'s gaps, so one failure does not mean a breach.' }));
+                results.appendChild(openDoorButton(cb));
+            } else {
+                results.appendChild(h('p', { text: 'Change the layers and test again.' }));
+            }
+        }
+
+        render();
+        wrap.appendChild(board);
+        wrap.appendChild(meter);
+        wrap.appendChild(h('button', { class: 'go', type: 'button', text: 'Test the gate', on: { click: run } }));
+        wrap.appendChild(results);
+        host.appendChild(wrap);
+    }
+
+    function buildModified(host, cb) {
+        quizPanel(host, cb, 'The Workshop',
+            tr('Some models have their refusals reduced or removed. Learn the difference between <b>normal</b>, <b>uncensored</b> and <b>abliterated</b> models, and when each one is a sensible choice. Get 5 of {total} right.', { total: P.WORKSHOP_ITEMS.length }),
+            {
+                options: P.KIND_OPTIONS,
+                items: P.WORKSHOP_ITEMS, pass: 5,
+                passMsg: 'The workshop is done. Fewer refusals move the safety job from the model to you, so use them only where you can carry it.'
+            });
+    }
+
     /* ---------------------------------------------------------------- */
     /* public API                                                        */
     /* ---------------------------------------------------------------- */
@@ -1684,6 +1762,9 @@
             else if (kind === 'team') { buildTeam(host, cb); }
             else if (kind === 'files') { buildFiles(host, cb); }
             else if (kind === 'memfile') { buildMemFile(host, cb); }
+            else if (kind === 'attacks') { buildAttacks(host, cb); }
+            else if (kind === 'layers') { buildLayers(host, cb); }
+            else if (kind === 'modified') { buildModified(host, cb); }
         },
         close: function (silent) {
             if (!current) { return; }
