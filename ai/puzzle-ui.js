@@ -1725,6 +1725,84 @@
             });
     }
 
+
+    /* ---------------------------------------------------------------- */
+    /* Under the Metal                                                   */
+    /* ---------------------------------------------------------------- */
+    function buildHardware(host, cb) {
+        quizPanel(host, cb, 'The Hardware Hall',
+            tr('Models run on chips, and software talks to each kind of chip in its own way. Match each machine to how it runs a model. Get 5 of {total} right.', { total: P.HW_ITEMS.length }),
+            {
+                options: P.HW_OPTIONS,
+                legend: P.HW_PRIMER,
+                items: P.HW_ITEMS, pass: 5,
+                passMsg: 'The hall is mapped. What your machine has decides which tools you can use and how much model fits.'
+            });
+    }
+
+    function buildEngine(host, cb) {
+        quizPanel(host, cb, 'The Engine Room',
+            tr('An <b>inference engine</b> is the program that actually runs a model for you. Besides the maths, a good one adds features. Match each need to the feature that solves it. Get 5 of {total} right.', { total: P.ENGINE_ITEMS.length }),
+            {
+                options: P.ENGINE_OPTIONS,
+                items: P.ENGINE_ITEMS, pass: 5,
+                passMsg: 'The engine hums. Most of what makes a local setup feel good comes from these features, not only from the model.'
+            });
+    }
+
+    function buildBandwidth(host, cb) {
+        var wrap = panelFrame('The Bandwidth Bottleneck',
+            tr('To write each new token, the machine reads the whole model out of memory once. So the speed is roughly <b>memory bandwidth ÷ model size</b>. Pick a model for each machine that fits (leaving {headroom} GB for the context), is fast enough, and is the <b>best quality</b> that still works.', { headroom: P.BW_HEADROOM }), cb);
+        var picks = {};
+        var board = h('div', { class: 'bw-board' });
+        var results = h('div', { class: 'puz-result', 'aria-live': 'polite' });
+
+        function render() {
+            clear(board);
+            P.BW_JOBS.forEach(function (job) {
+                var box = h('div', { class: 'q' }, [h('p', { class: 'q-text', raw: job.text })]);
+                var btns = h('div', { class: 'q-btns' });
+                P.BW_MODELS.forEach(function (m) {
+                    var on = picks[job.id] === m.id;
+                    var b = h('button', { class: 'ghost tool' + (on ? ' on' : ''), type: 'button', 'aria-pressed': on ? 'true' : 'false', raw: m.label + ' (' + m.size + ' GB)' });
+                    b.addEventListener('click', function () { picks[job.id] = m.id; clear(results); render(); });
+                    btns.appendChild(b);
+                });
+                box.appendChild(btns);
+                board.appendChild(box);
+            });
+        }
+
+        function run() {
+            clear(results);
+            var rows = P.bandwidthResult(picks);
+            var good = 0;
+            rows.forEach(function (r, i) {
+                if (r.ok) { good++; }
+                var msg;
+                if (r.kind === 'none') { msg = tr('✗ {n}. No model chosen.', { n: i + 1 }); }
+                else if (r.kind === 'ok') { msg = tr('✓ {n}. {model}: about {speed} tokens a second. It fits, it is fast enough, and nothing better works.', { n: i + 1, model: r.model.label, speed: r.speed.toFixed(0) }); }
+                else if (r.kind === 'nofit') { msg = tr('✗ {n}. {model} needs {size} GB. It does not fit in the memory.', { n: i + 1, model: r.model.label, size: r.model.size }); }
+                else if (r.kind === 'slow') { msg = tr('✗ {n}. {model}: only about {speed} tokens a second, which is too slow.', { n: i + 1, model: r.model.label, speed: r.speed.toFixed(0) }); }
+                else { msg = tr('✗ {n}. {model} works, but {better} also fits and is fast enough, with better quality.', { n: i + 1, model: r.model.label, better: r.best.label }); }
+                results.appendChild(h('p', { class: 'q-why ' + (r.ok ? 'ok' : 'wrong'), raw: msg }));
+            });
+            results.appendChild(h('p', { class: 'score ' + (good === rows.length ? 'good' : 'bad'), raw: tr('{good} / {total} machines set up well', { good: good, total: rows.length }) }));
+            if (good === rows.length) {
+                results.appendChild(h('p', { text: 'You found the bottleneck. A faster chip helps, but memory bandwidth and capacity decide what is practical.' }));
+                results.appendChild(openDoorButton(cb));
+            } else {
+                results.appendChild(h('p', { text: 'Try other models and run the test again.' }));
+            }
+        }
+
+        render();
+        wrap.appendChild(board);
+        wrap.appendChild(h('button', { class: 'go', type: 'button', text: 'Run the benchmark', on: { click: run } }));
+        wrap.appendChild(results);
+        host.appendChild(wrap);
+    }
+
     /* ---------------------------------------------------------------- */
     /* public API                                                        */
     /* ---------------------------------------------------------------- */
@@ -1765,6 +1843,9 @@
             else if (kind === 'attacks') { buildAttacks(host, cb); }
             else if (kind === 'layers') { buildLayers(host, cb); }
             else if (kind === 'modified') { buildModified(host, cb); }
+            else if (kind === 'hardware') { buildHardware(host, cb); }
+            else if (kind === 'engine') { buildEngine(host, cb); }
+            else if (kind === 'bandwidth') { buildBandwidth(host, cb); }
         },
         close: function (silent) {
             if (!current) { return; }

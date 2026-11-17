@@ -320,6 +320,12 @@
         chamber(2, 'workshop', 'The Workshop', 'Tell normal, uncensored and abliterated models apart, and choose between them.', 'modified')
     ];
 
+    var METAL_ROOMS = [
+        chamber(0, 'hardware', 'The Hardware Hall', 'Match each machine to how it runs a model.', 'hardware'),
+        chamber(1, 'engine', 'The Engine Room', 'Match each need to the engine feature that solves it.', 'engine'),
+        chamber(2, 'bandwidth', 'The Bandwidth Bottleneck', 'Pick the best model each machine can run fast enough.', 'bandwidth')
+    ];
+
     var LOCAL_ROOMS = [
         chamber(0, 'packing', 'The Packing Room', 'Fit the best model into each machine\'s memory.', 'packing'),
         chamber(1, 'datagate', 'The Data Gate', 'Decide where each job should run: local or cloud.', 'datagate'),
@@ -410,13 +416,13 @@
         {
             id: 'hood',
             title: 'Under the Hood',
-            group: 'bonus',
+            group: 'basics',
             difficulty: 'medium',
             unit: 'Chamber',
             hud: 'basic',
             theme: 'steel',
             ready: true,
-            requires: ['ai', 'models', 'talk', 'trust', 'local'], // bonus: opens once every Basics dungeon is cleared
+            requires: ['local'],
             blurb: 'Tokens per second, caches, and what separates a normal model from an uncensored one.',
             thumb: 'speed',
             rooms: HOOD_ROOMS
@@ -424,13 +430,13 @@
         {
             id: 'agentic',
             title: 'Agentic AI',
-            group: 'bonus',
-            difficulty: 'hard',
+            group: 'basics',
+            difficulty: 'medium',
             unit: 'Chamber',
             hud: 'basic',
             theme: 'rust',
             ready: true,
-            requires: ['ai', 'models', 'talk', 'trust', 'local'], // bonus: opens once every Basics dungeon is cleared
+            requires: ['hood'],
             blurb: 'How an agent really works, what stops it running away, and how much freedom to give it.',
             thumb: 'loop',
             rooms: AGENTIC_ROOMS
@@ -444,7 +450,7 @@
             hud: 'basic',
             theme: 'moss',
             ready: true,
-            requires: ['ai', 'models', 'talk', 'trust', 'local', 'agentic'], // bonus: after the Basics and Agentic AI
+            requires: ['ai', 'models', 'talk', 'trust', 'local', 'hood', 'agentic'], // bonus: opens once every Basics dungeon is cleared
             blurb: 'How a model picks a tool, what MCP plugs in, and what the harness does when a call goes wrong.',
             thumb: 'socket',
             rooms: TOOLS_ROOMS
@@ -458,7 +464,7 @@
             hud: 'basic',
             theme: 'teal',
             ready: true,
-            requires: ['ai', 'models', 'talk', 'trust', 'local', 'tools'], // bonus: after the Basics and Tools and MCP
+            requires: ['ai', 'models', 'talk', 'trust', 'local', 'hood', 'agentic'], // bonus: opens once every Basics dungeon is cleared
             blurb: 'When to use a team of agents, what soul, skills and memory files are for, and what to remember.',
             thumb: 'scrolls',
             rooms: TEAMS_ROOMS
@@ -472,10 +478,24 @@
             hud: 'basic',
             theme: 'plum',
             ready: true,
-            requires: ['ai', 'models', 'talk', 'trust', 'local', 'hood'], // bonus: after the Basics and Under the Hood
+            requires: ['ai', 'models', 'talk', 'trust', 'local', 'hood', 'agentic'], // bonus: opens once every Basics dungeon is cleared
             blurb: 'How jailbreaks work, why safeguards come in layers, and what uncensored and abliterated models really are.',
             thumb: 'layergate',
             rooms: SAFE_ROOMS
+        },
+        {
+            id: 'metal',
+            title: 'Under the Metal',
+            group: 'bonus',
+            difficulty: 'hard',
+            unit: 'Chamber',
+            hud: 'basic',
+            theme: 'steel',
+            ready: true,
+            requires: ['ai', 'models', 'talk', 'trust', 'local', 'hood', 'agentic'], // bonus: opens once every Basics dungeon is cleared
+            blurb: 'GPUs, CUDA and Metal, what an inference engine adds, and why memory bandwidth sets your speed.',
+            thumb: 'engine',
+            rooms: METAL_ROOMS
         },
         {
             id: 'forge',
@@ -486,7 +506,7 @@
             hud: 'forge',
             theme: 'default',
             ready: true,
-            requires: ['ai', 'models', 'talk', 'trust', 'local'], // bonus: opens once every Basics dungeon is cleared
+            requires: ['ai', 'models', 'talk', 'trust', 'local', 'hood', 'agentic'], // bonus: opens once every Basics dungeon is cleared
             blurb: 'Tweak a companion like a modelfile: temperature, context length and the system prompt. Pip joins you here.',
             thumb: 'hall',
             rooms: ROOMS

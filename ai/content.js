@@ -88,7 +88,7 @@
                 ['<b>Loot: the Modelfile Anvil.</b> You know where models can run and what that costs.',
                     '<b>Local:</b> private, works offline and has a fixed cost, but is limited by your hardware. Quantization lets bigger models fit.',
                     '<b>Cloud:</b> the strongest models and no hardware to manage, but you pay per use and your data leaves your machine.'],
-                ['<span class="tip">The bonus dungeons are now open: <b>Under the Hood</b> (speed, caches, uncensored models), <b>Agentic AI</b> (loops, limits, permissions) and <b>The Forge</b> (tweak Pip like a modelfile). The <b>Grimoire</b> on the hub keeps every idea you have learned.</span>']
+                ['<span class="tip">Next: Under the Hood. What makes a model fast, what is a cache, and what is an uncensored model? The <b>Grimoire</b> on the hub keeps every idea you have learned.</span>']
             ],
             clearButton: 'Back to the dungeons'
         },
@@ -105,7 +105,7 @@
                     '<b>Speed</b> is tokens per second plus time to first token. Model size, quantization and hardware decide it.',
                     '<b>Caches</b> reuse earlier work: the KV cache lives inside the model, and prompt caching reuses an identical prefix. Put stable content first.',
                     '<b>Uncensored</b> means fewer refusals, not more intelligence. It moves the safety job from the model to you.'],
-                ['<span class="tip">Try the Forge next. Local models are tuned with a <b>modelfile</b>: temperature, context length (num_ctx) and more.</span>']
+                ['<span class="tip">Next: Agentic AI. How does an agent really work, and how do you keep it on a leash?</span>']
             ],
             clearButton: 'Back to the dungeons'
         },
@@ -156,6 +156,23 @@
                     '<b>Jailbreaks:</b> role-play, overrides, gradual pressure, hidden text and false authority all try to move a model off its rules. Learn the patterns.',
                     '<b>Layers:</b> no safeguard is perfect, so stack training, filters, tool limits and human approval until no attack depends on just one.',
                     '<b>Modified models:</b> uncensored models are trained to refuse less, and abliterated models have refusal edited out of the weights. Both move the safety job to you.'],
+                ['<span class="tip">Next: Under the Metal. What chips run models, and why does memory decide your speed?</span>']
+            ],
+            clearButton: 'Back to the dungeons'
+        },
+        metal: {
+            intro: [
+                ['Every model ends up running on a physical chip. See what is happening <b>under the metal</b>: which chips run models, what an inference engine adds, and why memory sets your speed.'],
+                ['Three chambers lie ahead: the hardware, the engine that drives it, and the bottleneck that limits it.',
+                    '<span class="tip">Walk into a golem to challenge it.</span>']
+            ],
+            introButton: 'Enter the dungeon',
+            clearTitle: 'Under the Metal cleared!',
+            clear: [
+                ['<b>Loot: the Anvil.</b>',
+                    '<b>Hardware:</b> NVIDIA GPUs use CUDA, Apple chips use Metal with shared memory, Vulkan is an open option, and a CPU works but slowly.',
+                    '<b>Engines:</b> an inference engine adds a compatible API, prompt caching, speculative decoding, batching and context compaction on top of running the model.',
+                    '<b>Bandwidth:</b> speed is roughly memory bandwidth divided by model size, so a smaller or more quantized model is faster, and the model has to fit in memory first.'],
                 ['<span class="tip">Try the Forge next. Local models are tuned with a <b>modelfile</b>: temperature, context length (num_ctx) and the system prompt.</span>']
             ],
             clearButton: 'Back to the dungeons'
@@ -173,7 +190,7 @@
                     '<b>The loop:</b> the harness feeds the model, the model proposes an action, the harness checks and runs it, and the result goes back into the history. The model only proposes.',
                     '<b>Limits:</b> step caps, loop detection and spending controls each catch different failures, so layer them and size them for real work.',
                     '<b>Autonomy:</b> let agents act alone only on low-risk, reversible actions. Ask a human for the hard to undo, and never hand over the catastrophic.'],
-                ['<span class="tip">Next: Tools and MCP. How does a model choose a tool, and what is MCP?</span>']
+                ['<span class="tip">The Basics are complete. The bonus dungeons are now open: <b>Tools and MCP</b>, <b>Agent Teams and Memory</b>, <b>Jailbreaks and Safeguards</b>, <b>Under the Metal</b> and <b>The Forge</b>.</span>']
             ],
             clearButton: 'Back to the dungeons'
         },
@@ -270,6 +287,18 @@
         runaway: [
             ['Four agents are about to go wrong: one repeats itself, one is doing real work, one tries a big purchase, and one wanders aimlessly.',
                 'Set the limits in the harness so that every runaway is stopped, but the genuine task is allowed to finish.', '<span class="tip">Walk into a golem to challenge it.</span>']
+        ],
+        hardware: [
+            ['A model is just numbers until a chip runs it. Different chips need different software to drive them.',
+                'Match each machine to the way it runs a model.', '<span class="tip">Walk into a golem to challenge it.</span>']
+        ],
+        engine: [
+            ['Running the maths is only part of the job. An <b>inference engine</b> is the program that loads a model and serves it, and the good ones add features around it.',
+                'Match each need to the feature that solves it.', '<span class="tip">Walk into a golem to challenge it.</span>']
+        ],
+        bandwidth: [
+            ['Generating a token means reading the model out of memory. A machine can have a fast chip and still wait on memory.',
+                'Pick a model for each machine, so that it fits, runs fast enough, and is as good as it can be.', '<span class="tip">Walk into a golem to challenge it.</span>']
         ],
         breakin: [
             ['A jailbreak is an attempt to talk a model out of its rules. Many of them follow a few patterns.',
@@ -444,6 +473,21 @@
             '<b>In the real world:</b> real prices change, and local has hidden costs: setup time, maintenance, and hardware that can sit idle.',
             '<b>Use it:</b> estimate your volume first. A few requests a day rarely justify hardware. Millions might.'
         ],
+        gpus: [
+            '<b>Name it:</b> a <i>GPU platform</i>: the software layer that lets programs use a graphics chip for general maths. <i>CUDA</i> is NVIDIA\'s, <i>Metal</i> is Apple\'s, and <i>Vulkan</i> is an open interface used by many makers.',
+            '<b>In the real world:</b> most AI software supports CUDA first, so NVIDIA is the safe default. Apple chips share one pool of memory between the CPU and GPU, which lets large models fit. A CPU alone can run small models, but slowly.',
+            '<b>Use it:</b> check which platform your tool supports before you buy hardware, and compare how much memory the GPU can actually use, since that decides which models fit.'
+        ],
+        engines: [
+            '<b>Name it:</b> an <i>inference engine</i>: the program that loads a model and runs it for you, often as a server. Features include an API that copies a popular one, prompt caching, speculative decoding, batching and context compaction.',
+            '<b>In the real world:</b> engines differ a lot in speed, memory use and features, even for the same model. Speculative decoding keeps the big model\'s answer but gets it sooner. Compaction saves room but can lose details.',
+            '<b>Use it:</b> choose an engine for the hardware you have and the features you need, and test it with your own prompts instead of trusting a headline speed.'
+        ],
+        bandwidth: [
+            '<b>Name it:</b> <i>memory bandwidth</i>: how many gigabytes per second a chip can read from memory. Because each token needs the model read once, tokens per second is roughly bandwidth divided by model size.',
+            '<b>In the real world:</b> this is why quantization speeds a model up as well as shrinking it, and why a machine with fast memory can beat one with a faster processor. It is also why a model must fit in memory first, with room left for the context.',
+            '<b>Use it:</b> estimate the speed before you download a model: divide your memory bandwidth by the model\'s size in gigabytes, and leave headroom for the context window.'
+        ],
         jailbreaks: [
             '<b>Name it:</b> a <i>jailbreak</i>: an attempt to make a model ignore its safety rules, usually through words alone. Common patterns are role-play framing, instruction overrides, gradual pressure over many messages, text hidden in documents, and false claims of authority.',
             '<b>In the real world:</b> no model is fully immune, and new wordings appear all the time, so it is a cat-and-mouse game. Attacks that hide inside data an agent reads are called <i>indirect prompt injection</i>, and they are the most dangerous for agents.',
@@ -555,6 +599,9 @@
         speed:      { dungeon: 'hood',   title: 'Tokens per second',         where: 'The Speed Run',        line: 'Match speed to the job: wait for the first token, streaming rate, or total throughput.' },
         cache:      { dungeon: 'hood',   title: 'Caching',                   where: 'The Cache Vault',      line: 'Put stable content first in a prompt so the cache can reuse it.' },
         guardrails: { dungeon: 'hood',   title: 'Alignment and guardrails',  where: 'The Guardrail Gate',   line: 'Uncensored removes a model\'s refusals, not the risk. Add protection somewhere else.' },
+        gpus:       { dungeon: 'metal',   title: 'GPUs: CUDA, Metal, Vulkan', where: 'The Hardware Hall',   line: 'The chip decides which software runs, and its memory decides which models fit.' },
+        engines:    { dungeon: 'metal',   title: 'Inference engines',      where: 'The Engine Room',      line: 'An engine adds an API, caching, speculative decoding and batching around the model.' },
+        bandwidth:  { dungeon: 'metal',   title: 'Memory bandwidth',       where: 'The Bandwidth Bottleneck', line: 'Speed is roughly bandwidth divided by model size. The model must fit first.' },
         jailbreaks: { dungeon: 'safe',    title: 'Jailbreaks',             where: 'The Break-In',         line: 'Role-play, overrides, pressure, hidden text and false authority. Learn the patterns.' },
         layers:     { dungeon: 'safe',    title: 'Defence in depth',       where: 'The Layered Gate',     line: 'Stack safeguards so no attack depends on a single one.' },
         modifiedmodels: { dungeon: 'safe', title: 'Uncensored and abliterated', where: 'The Workshop',   line: 'Both remove a safeguard. Use them only where you can carry the safety job yourself.' },

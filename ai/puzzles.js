@@ -1009,7 +1009,100 @@
         { text: 'Which would you use for an agent that browses the web and can read company email?', answer: 'normal', options: JOB_OPTIONS, why: 'It reads untrusted text and holds real access. Removing its safety training makes an injected instruction far more dangerous.' }
     ];
 
+
+    /* ================================================================ */
+    /* Dungeon: Under the Metal                                          */
+    /* ================================================================ */
+
+    // ---- Chamber 1: the Hardware Hall ----
+    var HW_OPTIONS = [
+        { id: 'cuda', label: 'CUDA' },
+        { id: 'metal', label: 'Metal' },
+        { id: 'vulkan', label: 'Vulkan' },
+        { id: 'cpu', label: 'CPU only' }
+    ];
+    var HW_PRIMER = [
+        { label: 'CUDA:', desc: 'NVIDIA\'s platform for running software on its GPUs. Most AI tools support it first.' },
+        { label: 'Metal:', desc: 'Apple\'s way of using the GPU in its own chips. The CPU and GPU share one pool of memory.' },
+        { label: 'Vulkan:', desc: 'an open interface that works across many makers\' GPUs.' }
+    ];
+    var HW_ITEMS = [
+        { text: 'A desktop with an NVIDIA gaming graphics card.', answer: 'cuda', why: 'CUDA is NVIDIA\'s own platform, and almost every AI tool supports it.' },
+        { text: 'A laptop with an Apple M-series chip.', answer: 'metal', why: 'Metal is how software uses the GPU in Apple chips. Its shared memory lets fairly large models fit.' },
+        { text: 'You want one build of an engine that runs on GPUs from many different makers.', answer: 'vulkan', why: 'Vulkan is an open interface that is not tied to a single maker.' },
+        { text: 'An old office PC with no graphics card at all.', answer: 'cpu', why: 'A model can run on the CPU, but slowly. Only small, quantized models are practical.' },
+        { text: 'A cloud server with an NVIDIA data-centre GPU.', answer: 'cuda', why: 'Data-centre GPUs from NVIDIA are driven through CUDA.' },
+        { text: 'A Mac Studio where the CPU and GPU share 64 GB of memory.', answer: 'metal', why: 'The GPU can use most of that shared memory, so it can hold models a graphics card with less memory could not.' }
+    ];
+
+    // ---- Chamber 2: the Engine Room (what an inference engine adds) ----
+    var ENGINE_OPTIONS = [
+        { id: 'api', label: 'Compatible API' },
+        { id: 'promptcache', label: 'Prompt caching' },
+        { id: 'specdec', label: 'Speculative decoding' },
+        { id: 'batching', label: 'Batching' },
+        { id: 'compaction', label: 'Context compaction' }
+    ];
+    var ENGINE_ITEMS = [
+        { text: 'Your app already talks to a cloud model. You want to point it at a local model without rewriting it.', answer: 'api', why: 'An engine that copies a popular API lets existing apps and tools switch models by changing an address.' },
+        { text: 'Every request starts with the same long instructions, and re-reading them each time wastes effort.', answer: 'promptcache', why: 'The engine keeps the work already done on the shared beginning and reuses it, so only the new part is processed.' },
+        { text: 'A small, quick model guesses the next few tokens and the big model checks them all at once.', answer: 'specdec', why: 'Checking several guesses together is faster than producing them one by one. The big model still decides the answer.' },
+        { text: 'Ten people send requests at the same moment, and the GPU is sitting mostly idle between them.', answer: 'batching', why: 'Handling several requests together keeps the GPU busy and serves more people for the same hardware.' },
+        { text: 'A long chat is close to overflowing the context window, so older turns are boiled down to a summary.', answer: 'compaction', why: 'It frees room in the window, at the risk that a detail gets lost in the summary.' },
+        { text: 'The big model keeps the small model\'s guesses that it agrees with, and replaces the rest.', answer: 'specdec', why: 'The more often the small model guesses right, the bigger the speed-up. The final text is what the big model would have written.' }
+    ];
+
+    // ---- Chamber 3: the Bandwidth Bottleneck ----
+    // Each new token needs the model's weights read from memory once, so speed is about bandwidth / model size.
+    var BW_HEADROOM = 2; // GB kept free for the context
+    var BW_MODELS = [
+        { id: 'm1', label: '8B model, 4-bit', size: 5, quality: 1 },
+        { id: 'm2', label: '8B model, 8-bit', size: 8.5, quality: 2 },
+        { id: 'm3', label: '8B model, 16-bit', size: 16, quality: 3 },
+        { id: 'm4', label: '70B model, 4-bit', size: 40, quality: 4 },
+        { id: 'm5', label: '70B model, 8-bit', size: 70, quality: 5 }
+    ];
+    var BW_JOBS = [
+        { id: 'laptop', text: 'A laptop with 16 GB of memory and 100 GB/s bandwidth. Chat needs at least 15 tokens a second.', bandwidth: 100, memory: 16, minSpeed: 15 },
+        { id: 'gaming', text: 'A gaming PC with 24 GB of memory and 500 GB/s bandwidth. It needs at least 40 tokens a second, with the best quality that allows.', bandwidth: 500, memory: 24, minSpeed: 40 },
+        { id: 'server', text: 'A server GPU with 80 GB of memory and 2,000 GB/s bandwidth. It needs at least 30 tokens a second, with the best quality that allows.', bandwidth: 2000, memory: 80, minSpeed: 30 }
+    ];
+    function bwModel(id) { return BW_MODELS.filter(function (m) { return m.id === id; })[0]; }
+    function bwSpeed(job, model) { return job.bandwidth / model.size; }
+    function bwFits(job, model) { return model.size <= job.memory - BW_HEADROOM; }
+    // the best quality that fits and is fast enough
+    function bwBest(job) {
+        var best = null;
+        BW_MODELS.forEach(function (m) {
+            if (bwFits(job, m) && bwSpeed(job, m) >= job.minSpeed && (!best || m.quality > best.quality)) { best = m; }
+        });
+        return best;
+    }
+    // picks: { jobId: modelId }
+    function bandwidthResult(picks) {
+        return BW_JOBS.map(function (job) {
+            var m = picks[job.id] ? bwModel(picks[job.id]) : null;
+            if (!m) { return { job: job, model: null, kind: 'none', ok: false, speed: 0 }; }
+            var speed = bwSpeed(job, m);
+            var best = bwBest(job);
+            var kind = !bwFits(job, m) ? 'nofit' : (speed < job.minSpeed ? 'slow' : (m.id !== best.id ? 'weak' : 'ok'));
+            return { job: job, model: m, kind: kind, ok: kind === 'ok', speed: speed, best: best };
+        });
+    }
+
     var api = {
+        HW_OPTIONS: HW_OPTIONS,
+        HW_PRIMER: HW_PRIMER,
+        HW_ITEMS: HW_ITEMS,
+        ENGINE_OPTIONS: ENGINE_OPTIONS,
+        ENGINE_ITEMS: ENGINE_ITEMS,
+        BW_HEADROOM: BW_HEADROOM,
+        BW_MODELS: BW_MODELS,
+        BW_JOBS: BW_JOBS,
+        bwSpeed: bwSpeed,
+        bwFits: bwFits,
+        bwBest: bwBest,
+        bandwidthResult: bandwidthResult,
         ATTACK_OPTIONS: ATTACK_OPTIONS,
         ATTACK_ITEMS: ATTACK_ITEMS,
         LAYER_MAX: LAYER_MAX,
