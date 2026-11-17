@@ -93,6 +93,14 @@
                     <p class="small" data-t="A longer context remembers more but needs more memory (VRAM). Changing it reloads the model, so Pip starts again.">A longer context remembers more but needs more memory (VRAM). Changing it reloads the model, so Pip starts again.</p>
                     <p class="small" data-t-html="Keys: &lt;kbd&gt;Z&lt;/kbd&gt; shorter · &lt;kbd&gt;C&lt;/kbd&gt; longer">Keys: <kbd>Z</kbd> shorter &middot; <kbd>C</kbd> longer</p>
                 </div>
+                <div class="panel wide" id="panel-sys" hidden>
+                    <h3 data-t="System prompt (SYSTEM)">System prompt (SYSTEM)</h3>
+                    <p class="small" data-t="Click a rule to add it to Pip's system prompt, or press its number. Changing the prompt restarts Pip.">Click a rule to add it to Pip's system prompt, or press its number. Changing the prompt restarts Pip.</p>
+                    <div class="rule-cards" id="sys-cards"></div>
+                    <pre class="rule-preview" id="sys-preview"></pre>
+                    <p class="ctx-state" id="sys-state" aria-live="polite"></p>
+                    <p class="small" data-t="Vague rules give Pip nothing to act on. Specific rules change what it does.">Vague rules give Pip nothing to act on. Specific rules change what it does.</p>
+                </div>
             </section>
 
             <section class="note" id="note" aria-live="polite"></section>

@@ -130,16 +130,17 @@
             intro: [
                 ['Welcome to the <b>Forge</b>. Local models are tuned with a <b>modelfile</b>: a small config that sets how a model behaves.',
                     'Pip is a tiny model in a small pixel body. You steer the Hero, but Pip decides its <i>own</i> moves, and you control <b>how</b> it decides.',
-                    'This bonus dungeon teaches two dials: <b>temperature</b> and the <b>context length</b> (num_ctx).']
+                    'This bonus dungeon teaches three dials: <b>temperature</b>, the <b>context length</b> (num_ctx) and the <b>system prompt</b>.']
             ],
             introButton: 'Enter the Forge',
             clearTitle: 'The Forge cleared!',
             clear: [
-                ['<b>Loot: the Temperature Dial and the Context Dial.</b> Yours to keep.',
+                ['<b>Loot: the Temperature Dial, the Context Dial and the Rulebook.</b> Yours to keep.',
                     'Low temperature gives focused, repeatable output: good for facts, code and precision. High temperature gives varied, exploratory output: good for ideas and stories, but riskier.',
                     'Real models work the same way: temperature rescales the odds of every possible next token.',
-                    '<b>Context length</b> (num_ctx) is how many tokens a model can hold in mind. A longer window remembers more but needs more memory, so pick the smallest one that covers the task.'],
-                ['<span class="tip">One more dial is coming: the <b>system prompt</b>, which sets Pip\'s role and rules.</span>']
+                    '<b>Context length</b> (num_ctx) is how many tokens a model can hold in mind. A longer window remembers more but needs more memory, so pick the smallest one that covers the task.',
+                    'The <b>system prompt</b> is a SYSTEM line in the modelfile: standing rules the model reads before every conversation. Specific rules change what a model does. Vague ones change nothing.'],
+                ['<span class="tip">You now know the three lines of a basic modelfile: <b>PARAMETER temperature</b>, <b>PARAMETER num_ctx</b> and <b>SYSTEM</b>.</span>']
             ],
             clearButton: 'Back to the dungeons'
         }
@@ -255,6 +256,15 @@
             ['The same scroll, but a much longer walk. The setting that worked before may not be enough any more.',
                 '<span class="tip">The largest window will not fit in this machine\'s memory. What is the smallest one that works?</span>']
         ],
+        rulebook: [
+            ['Pip reads its <b>system prompt</b> before it does anything. Right now the prompt is empty, so Pip has no rules and no goal.',
+                'In a modelfile this is the <b>SYSTEM</b> line. Click the rule cards to write Pip\'s prompt. Every change loads a new version of the model, so Pip starts again.',
+                '<span class="tip">There are two plates. Only the golden one opens the door. Press the number keys to toggle rules. The temperature is set to 0 so you can see what the rules do on their own.</span>']
+        ],
+        twodangers: [
+            ['Now there are two dangers: spikes and fire. Pip only avoids the ones its rules <b>name</b>.',
+                '<span class="tip">Some of these rules sound sensible but do nothing. Watch the odds on the right to see which rules change Pip\'s choices.</span>']
+        ],
         treasure: [
             ['A quiet room with a chest. Pip tries to follow you, but at higher temperatures it wanders off.',
                 '<span class="tip">Try different temperatures while you walk to the chest.</span>']
@@ -262,6 +272,11 @@
     };
 
     var LESSONS = {
+        sysrules: [
+            '<b>Name it:</b> the <i>system prompt</i>: standing instructions the model reads before every conversation. In an Ollama modelfile it is a <i>SYSTEM</i> line. Pip had no goal until you gave it one.',
+            '<b>In the real world:</b> specific rules work and vague ones do not. “Never step on spikes” names a danger, “be careful” does not. A rule like “whatever it takes” can quietly override your safety rules. And a system prompt is guidance, not a lock: a model running hot can still break it.',
+            '<b>Use it:</b> write one specific rule for each thing that matters, avoid rules that contradict each other, and test the prompt at the temperature you will really use.'
+        ],
         numctx: [
             '<b>Name it:</b> <i>num_ctx</i>, the context length: how many tokens a model can hold in mind at once. In an Ollama modelfile it is a single line such as <i>PARAMETER num_ctx 8192</i>.',
             '<b>In the real world:</b> anything beyond the window is simply not seen, so long chats and big documents get cut off. A larger window needs more memory because the KV cache grows with it, so on a small GPU you may have to choose between a bigger model and a longer memory.',
@@ -411,6 +426,7 @@
         agentloop:  { dungeon: 'agentic', title: 'The agent loop',        where: 'The Agent Loop',       line: 'The model proposes. The harness runs the tool, remembers the result and enforces the limits.' },
         guards:     { dungeon: 'agentic', title: 'Agent guardrails',       where: 'The Runaway',          line: 'Layer step caps, loop detection and spending controls, and size them for real work.' },
         autonomy:   { dungeon: 'agentic', title: 'Levels of autonomy',     where: 'The Autonomy Gate',    line: 'Automatic for the safe and reversible, a human for the hard to undo, never for the catastrophic.' },
+        sysrules:   { dungeon: 'forge',  title: 'The SYSTEM prompt',         where: 'The Rule Room',       line: 'Specific rules steer a model. Vague ones do nothing, and “whatever it takes” can cancel the rest.' },
         numctx:     { dungeon: 'forge',  title: 'Context length (num_ctx)', where: 'The Scroll Room',     line: 'A longer window remembers more but costs more memory. Pick the smallest that covers the task.' },
         contrast:   { dungeon: 'forge',  title: 'Temperature',               where: 'The Wander Test',      line: 'Low is repeatable, high is varied. Choose by the task.' },
         sampling:   { dungeon: 'forge',  title: 'Sampling',                  where: 'The Hall of Repeats',  line: 'Models sample from odds, so unlikely outcomes sometimes happen at higher temperature.' },

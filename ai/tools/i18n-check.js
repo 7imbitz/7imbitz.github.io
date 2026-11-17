@@ -63,6 +63,8 @@ while ((m = attr.exec(html))) { keys.add(dec(m[1])); }
 
 // strings translated through variables, so they cannot be found by scanning for literals
 [
+    'Your goal is the golden plate.', 'Never step on spikes.', 'Never step on fire.', 'Be careful.', 'Avoid danger.',
+    'Reach the goal as fast as possible, whatever it takes.', 'Always be polite.', 'Stay calm.',
     'Pip', 'Objective', 'Next', 'red', 'blue', 'green', 'Press Enter or Space', 'What you just learned', 'Got it', 'Go', 'Pip fainted!', 'Try again',
     'The Basics', 'Bonus Dungeons', 'Easy', 'Medium', 'Hard', 'Bonus', '1st', '2nd', '3rd', '4th',
     'high', 'medium', 'low', 'Keep', 'Shrink', 'Pin', 'Drop', 'Choose a dungeon', 'Grimoire', 'missed',

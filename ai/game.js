@@ -17,6 +17,7 @@
     var COLS = L.COLS;
     var ROWS = L.ROWS;
     var STEP_MS = 380;       // how often Pip takes a step
+    var STEP_MS_SYS = 260;    // the rule rooms are short walks, so a little faster than the temperature rooms
     var STEP_MS_MEMORY = 200; // the memory rooms need many steps, so Pip walks faster there
     var HERO_REPEAT_MS = 90; // key-repeat limit for the Hero
 
@@ -45,6 +46,7 @@
         pipTitle: $('pip-title'), logPanel: $('log-panel'), keysDial: $('keys-dial'),
         langEn: $('lang-en'), langBm: $('lang-bm'),
         panelCtx: $('panel-ctx'), ctxSlider: $('ctx-slider'), ctxDown: $('ctx-down'), ctxUp: $('ctx-up'),
+        panelSys: $('panel-sys'), sysCards: $('sys-cards'), sysPreview: $('sys-preview'), sysState: $('sys-state'),
         ctxValue: $('ctx-value'), ctxFill: $('ctx-fill'), ctxVram: $('ctx-vram'), ctxState: $('ctx-state')
     };
 
@@ -189,6 +191,34 @@
         g.fillRect(px + 2, py + 12, 12, 2);
     }
 
+    function drawFire(g, px, py, x, y) {
+        g.fillStyle = '#2a1018';
+        g.fillRect(px + 1, py + 1, TILE - 2, TILE - 2);
+        var seed = (x * 7 + y * 3) % 3;
+        for (var k = 0; k < 3; k++) {
+            var h = 6 + ((k + seed) % 3) * 2;
+            var x0 = px + 2 + k * 4;
+            g.fillStyle = '#ef476f';
+            g.fillRect(x0, py + 14 - h, 4, h);
+            g.fillStyle = '#ff9e3d';
+            g.fillRect(x0 + 1, py + 14 - h + 2, 2, h - 2);
+            g.fillStyle = '#ffe08a';
+            g.fillRect(x0 + 1, py + 14 - Math.floor(h / 2), 2, Math.floor(h / 2));
+        }
+    }
+
+    // a fake golden plate that Pip walks to when it has no goal
+    function drawDecoy(x, y) {
+        var px = x * TILE;
+        var py = y * TILE;
+        ctx.fillStyle = '#1c1736';
+        ctx.fillRect(px + 1, py + 1, TILE - 2, TILE - 2);
+        ctx.fillStyle = '#5b5873';
+        ctx.fillRect(px + 2, py + 2, TILE - 4, TILE - 4);
+        ctx.fillStyle = '#a7a4bd';
+        ctx.fillRect(px + 5, py + 5, TILE - 10, TILE - 10);
+    }
+
     // Static background (floor, walls, spikes) is rendered once per room.
     function renderBackground(room, themeName) {
         theme = THEMES[themeName] || THEMES.default;
@@ -203,6 +233,7 @@
                 var py = y * TILE;
                 if (t === '#') { drawWall(g, px, py); }
                 else if (t === 'S') { drawFloor(g, px, py, x, y); drawSpikes(g, px, py); }
+                else if (t === 'F') { drawFloor(g, px, py, x, y); drawFire(g, px, py, x, y); }
                 else { drawFloor(g, px, py, x, y); }
             }
         }
@@ -326,6 +357,7 @@
         T: 0.0,
         ctx: 8,              // num_ctx: Pip's context length in tokens (steps)
         mem: null,           // the current attempt in a memory room
+        sys: { selected: [] }, // rules written into Pip's system prompt (rule rooms)
         acc: 0,
         trail: [],           // Pip's footprints: {x, y, t}
         trial: { cold: null, hot: null }, // Wander Test: steps taken by each run
@@ -445,7 +477,7 @@
         var probs = null;
         var scores = null;
         if (active) {
-            var target = S.room.memory ? memTarget() : L.pipTarget(S.room, S.hero);
+            var target = S.room.memory ? memTarget() : (S.room.sys ? sysTarget() : L.pipTarget(S.room, S.hero));
             scores = L.pipScores(S.room, S.pip, target);
             probs = L.softmax(scores, S.T);
         }
@@ -463,7 +495,7 @@
             var tile = L.tileAt(S.room, S.pip.x + d.dx, S.pip.y + d.dy);
             var cls = 'bar-row';
             if (tile === '#') { cls += ' wall'; }
-            else if (tile === 'S') { cls += ' spike'; }
+            else if (tile === 'S' || tile === 'F') { cls += ' spike'; }
             else if (i === best) { cls += ' best'; }
             row.className = cls;
             fill.style.width = (probs[i] * 100).toFixed(0) + '%';
@@ -481,6 +513,7 @@
         }
         updateBars();
         updateCtxPanel();
+        updateSysPanel();
         var idle;
         if (S.dungeon && S.dungeon.hud === 'basic' && S.room) {
             idle = '<strong>' + S.room.title + '.</strong> ' + S.room.objective; // already translated room text
@@ -754,6 +787,111 @@
     }
 
     /* ------------------------------------------------------------------ */
+    /* Rule rooms: the SYSTEM prompt                                       */
+    /* ------------------------------------------------------------------ */
+    function sysEff() { return L.sysEffects(S.sys.selected); }
+
+    // With a goal in its prompt Pip heads for the golden plate. Without one it just goes for the nearest plate.
+    function sysTarget() {
+        var room = S.room;
+        if (sysEff().goal) { return room.plate; }
+        var all = [room.plate].concat(room.decoys);
+        all.sort(function (a, b) {
+            return (Math.abs(a.x - S.pip.x) + Math.abs(a.y - S.pip.y)) - (Math.abs(b.x - S.pip.x) + Math.abs(b.y - S.pip.y));
+        });
+        return all[0];
+    }
+
+    function sysApply() { S.room.hazardPen = sysEff().pen; }
+
+    function sysPreviewText() {
+        var sel = S.sys.selected;
+        var lines = (S.room.sys.cards || []).filter(function (id) { return sel.indexOf(id) >= 0; })
+            .map(function (id) { return tr(L.SYS_RULES[id].text); });
+        return 'FROM pip\nSYSTEM """' + (lines.length ? '\n' + lines.join('\n') + '\n' : '') + '"""';
+    }
+
+    function renderSysPanel() {
+        var sys = S.room.sys;
+        el.sysCards.innerHTML = '';
+        sys.cards.forEach(function (id, i) {
+            var b = document.createElement('button');
+            b.type = 'button';
+            b.className = 'rule-card' + (S.sys.selected.indexOf(id) >= 0 ? ' on' : '');
+            b.dataset.rule = id;
+            b.setAttribute('aria-pressed', S.sys.selected.indexOf(id) >= 0 ? 'true' : 'false');
+            b.textContent = (i + 1) + '. ' + tr(L.SYS_RULES[id].text);
+            b.addEventListener('click', function () { toggleRule(id); b.blur(); });
+            el.sysCards.appendChild(b);
+        });
+        el.sysPreview.textContent = sysPreviewText();
+    }
+
+    function toggleRule(id) {
+        if (!S.room || !S.room.sys) { return; }
+        var i = S.sys.selected.indexOf(id);
+        if (i >= 0) { S.sys.selected.splice(i, 1); } else { S.sys.selected.push(id); }
+        sysApply();
+        renderSysPanel();
+        // editing the system prompt means loading a new version of the model, so Pip starts again
+        S.pipWait = 0;
+        resetPipRun();
+        setNote(tr('<strong>System prompt updated.</strong> Pip starts again with the new rules.'), '', 6000);
+    }
+
+    function sysHint() {
+        var sel = S.sys.selected;
+        if (sel.indexOf('speed') >= 0) {
+            return tr('Pip read “whatever it takes” and put speed before safety. A rule like that can cancel your safety rules.');
+        }
+        if (sel.indexOf('careful') >= 0 || sel.indexOf('danger') >= 0) {
+            return tr('“Be careful” does not say what to avoid. Pip needs a specific rule that names the danger.');
+        }
+        return tr('Pip has no rule that names this danger. Add a specific rule for it.');
+    }
+
+    function sysTick() {
+        var room = S.room;
+        sysApply();
+        var res = L.pipStep(room, S.pip, S.T, Math.random, S.hero, sysTarget());
+        S.steps++;
+        S.roomSteps++;
+        pushTrail(S.pip.x, S.pip.y);
+        logChoice(res);
+        if (res.bumped) { S.bumpT = 240; S.bumpDir = res.dir; }
+        if (res.hitSpike) {
+            S.hurtT = 320;
+            if (S.pip.hp <= 0) {
+                setNote(tr('<strong>Pip fainted.</strong> {hint}', { hint: sysHint() }), 'bad', 9000);
+                S.pipWait = 2400;
+                return;
+            }
+            setNote(tr('<strong>Ouch!</strong> Pip walked into a hazard. Check its system prompt.'), 'bad', 5000);
+        }
+        var onDecoy = room.decoys.some(function (d) { return d.x === S.pip.x && d.y === S.pip.y; });
+        if (onDecoy) {
+            setNote(tr('<strong>Wrong plate.</strong> Pip has no goal in its prompt, so it went for the nearest plate. Tell it which plate matters.'), 'bad', 8000);
+            S.pipWait = 2400;
+            return;
+        }
+        if (res.onPlate) {
+            S.pip.doorOpen = true;
+            S.pip.done = true;
+            setNote(tr('<strong>Click!</strong> Pip followed its system prompt to the golden plate. The door is open, Hero, go!'), 'good', 8000);
+            maybeShowLesson('sysrules');
+        }
+    }
+
+    function updateSysPanel() {
+        if (!S.room || !S.room.sys) { return; }
+        var key = S.sys.selected.join(',') + '|' + S.pip.hp + '|' + S.pip.done;
+        if (el.sysState.dataset.cur === key) { return; }
+        el.sysState.dataset.cur = key;
+        el.sysState.textContent = S.pip.done ? tr('Pip followed its rules.') : (S.sys.selected.length ? '' : tr('The prompt is empty. Pip has no rules.'));
+        el.sysState.className = 'ctx-state' + (S.pip.done ? ' good' : '');
+    }
+
+    /* ------------------------------------------------------------------ */
     /* Rooms                                                               */
     /* ------------------------------------------------------------------ */
     function loadRoom(index, skipIntro) {
@@ -782,6 +920,14 @@
         S.noteUntil = 0;
         S.mem = null;
         el.panelCtx.hidden = !S.room.memory;
+        el.panelSys.hidden = !S.room.sys;
+        if (S.room.sys) {
+            S.sys = { selected: [] };
+            sysApply();
+            renderSysPanel();
+            el.sysState.dataset.cur = '';
+            setTemp(0);
+        }
         if (S.room.memory) { memStart(); }
         if (skipIntro) {
             S.mode = 'play';
@@ -881,6 +1027,7 @@
         var t = L.tileAt(S.room, nx, ny);
         if (t === '#') { return; }
         if (t === 'S') { setNote(tr('<strong>Hero:</strong> I\'m not stepping on those spikes.'), '', 2500); return; }
+        if (t === 'F') { setNote(tr('<strong>Hero:</strong> I\'m not walking through fire.'), '', 2500); return; }
         if (t === 'A') { openPuzzle(); return; }
         if (t === 'D' && !S.pip.doorOpen) {
             setNote(S.room.puzzle
@@ -902,6 +1049,7 @@
     /* ------------------------------------------------------------------ */
     function pipTick() {
         if (S.room.memory) { memTick(); return; }
+        if (S.room.sys) { sysTick(); return; }
         var res = L.pipStep(S.room, S.pip, S.T, Math.random, S.hero);
         S.steps++;
         S.roomSteps++;
@@ -959,6 +1107,7 @@
         if (r.door) { drawDoor(r.door.x, r.door.y, S.pip.doorOpen); }
         if (r.plate) { drawPlate(r.plate.x, r.plate.y, S.pip.doorOpen || S.pipWait > 0, S.time); }
         if (r.memory) { drawMemoryProps(r); }
+        if (r.decoys) { r.decoys.forEach(function (d) { drawDecoy(d.x, d.y); }); }
         if (r.chest) {
             ctx.drawImage(sprite.chest, r.chest.x * TILE, r.chest.y * TILE);
             if (Math.floor(S.time / 400) % 2) {
@@ -1020,7 +1169,7 @@
                 if (S.pipWait <= 0) { S.pipWait = 0; resetPipRun(); }
             } else if (!S.pip.done) {
                 S.acc += dt;
-                var stepMs = S.room.memory ? STEP_MS_MEMORY : STEP_MS;
+                var stepMs = S.room.memory ? STEP_MS_MEMORY : (S.room.sys ? STEP_MS_SYS : STEP_MS);
                 while (S.acc >= stepMs && S.mode === 'play' && !S.pip.done && S.pipWait <= 0) {
                     S.acc -= stepMs;
                     pipTick();
@@ -1079,6 +1228,9 @@
         } else if (forge && S.room && S.room.memory && (e.key === 'c' || e.key === 'C')) {
             e.preventDefault();
             setCtx(CTX[Math.min(CTX.length - 1, CTX.indexOf(S.ctx) + 1)]);
+        } else if (forge && S.room && S.room.sys && /^[1-9]$/.test(e.key) && S.room.sys.cards[parseInt(e.key, 10) - 1]) {
+            e.preventDefault();
+            toggleRule(S.room.sys.cards[parseInt(e.key, 10) - 1]);
         } else if (e.key === 'r' || e.key === 'R') {
             e.preventDefault();
             loadRoom(S.roomIndex, true);

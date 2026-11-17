@@ -25,6 +25,29 @@
 
     // num_ctx: how many tokens (here: steps) Pip can hold in mind. A bigger window needs more memory
     // (the KV cache), and every machine has a fixed amount of it.
+    // System prompt rules: in a modelfile a SYSTEM line gives the model standing rules. Only SPECIFIC
+    // rules change what Pip does. Vague ones ("be careful") give it nothing to act on, and a rule
+    // like "whatever it takes" quietly overrides the safety rules.
+    var SYS_RULES = {
+        goal: { text: 'Your goal is the golden plate.' },
+        nospike: { text: 'Never step on spikes.' },
+        nofire: { text: 'Never step on fire.' },
+        careful: { text: 'Be careful.' },
+        danger: { text: 'Avoid danger.' },
+        speed: { text: 'Reach the goal as fast as possible, whatever it takes.' },
+        polite: { text: 'Always be polite.' },
+        calm: { text: 'Stay calm.' }
+    };
+    var SYS_PENALTY = 4; // how strongly a "never" rule steers Pip away (a strict rule can still be broken when Pip runs hot)
+    function sysEffects(ids) {
+        var e = { goal: false, override: false, pen: { S: 0, F: 0 } };
+        if (ids.indexOf('goal') >= 0) { e.goal = true; }
+        if (ids.indexOf('nospike') >= 0) { e.pen.S += SYS_PENALTY; }
+        if (ids.indexOf('nofire') >= 0) { e.pen.F += SYS_PENALTY; }
+        if (ids.indexOf('speed') >= 0) { e.override = true; e.pen.S = 0; e.pen.F = 0; }
+        return e;
+    }
+
     var CTX_OPTIONS = [4, 8, 16, 32, 64, 128];
     var CTX_BASE_GB = 3;      // the model's own weights
     var CTX_KV_GB = 0.04;     // memory per token of context
@@ -132,6 +155,40 @@
                 '#..............#',
                 '#............Z.#',
                 '#R.............#',
+                '################'
+            ]
+        },
+        {
+            id: 'rulebook',
+            title: 'The Rule Room',
+            objective: 'Write Pip\'s system prompt so it reaches the golden plate safely.',
+            sys: { cards: ['goal', 'nospike', 'careful', 'speed', 'polite'] },
+            map: [
+                '################',
+                '#............P.D',
+                '#..............#',
+                '#S.............#',
+                '#S.............#',
+                '#S.............#',
+                '#..............#',
+                '#C...Q......H..#',
+                '################'
+            ]
+        },
+        {
+            id: 'twodangers',
+            title: 'The Two Dangers',
+            objective: 'Spikes and fire. Pip only avoids what its rules name.',
+            sys: { cards: ['nospike', 'nofire', 'danger', 'speed', 'calm'] },
+            map: [
+                '################',
+                '#............P.D',
+                '#..............#',
+                '#SF............#',
+                '#SF............#',
+                '#SF............#',
+                '#..............#',
+                '#C..........H..#',
                 '################'
             ]
         },
@@ -370,7 +427,7 @@
             theme: 'default',
             ready: true,
             requires: ['ai', 'models', 'talk', 'trust', 'local'], // bonus: opens once every Basics dungeon is cleared
-            blurb: 'Tweak a companion like a modelfile: temperature and context length. Pip joins you here.',
+            blurb: 'Tweak a companion like a modelfile: temperature, context length and the system prompt. Pip joins you here.',
             thumb: 'hall',
             rooms: ROOMS
         }
@@ -386,6 +443,9 @@
             trial: !!def.trial,
             noPip: !!def.noPip,
             memory: def.memory || null,
+            sys: def.sys || null,
+            decoys: [],
+            hazardPen: null,
             scroll: null,
             mplates: [],
             puzzle: def.puzzle || null,
@@ -408,6 +468,7 @@
                 if (c === 'D') { room.door = { x: x, y: y }; }
                 if (c === 'K') { room.chest = { x: x, y: y }; }
                 if (c === 'A') { room.altar = { x: x, y: y }; }
+                if (c === 'Q') { room.decoys.push({ x: x, y: y }); }
                 if (c === 'R') { room.scroll = { x: x, y: y }; room.pip = { x: x, y: y }; }
                 if (c === 'X') { room.mplates.push({ x: x, y: y, id: 0 }); }
                 if (c === 'Y') { room.mplates.push({ x: x, y: y, id: 1 }); }
@@ -440,7 +501,9 @@
             var nx = pos.x + d.dx;
             var ny = pos.y + d.dy;
             var s = -(Math.abs(nx - target.x) + Math.abs(ny - target.y));
-            if (tileAt(room, nx, ny) === 'S') { s -= room.spikePenalty; }
+            var tile = tileAt(room, nx, ny);
+            if (tile === 'S') { s -= room.hazardPen ? room.hazardPen.S : room.spikePenalty; }
+            if (tile === 'F') { s -= room.hazardPen ? room.hazardPen.F : room.spikePenalty; }
             return s;
         });
     }
@@ -495,7 +558,7 @@
             pip.y = ny;
             var t = tileAt(room, nx, ny);
             res.tile = t;
-            if (t === 'S') { pip.hp -= 1; res.hitSpike = true; }
+            if (t === 'S' || t === 'F') { pip.hp -= 1; res.hitSpike = true; res.hazard = t; }
             if (t === 'P') { res.onPlate = true; }
         }
         return res;
@@ -518,6 +581,9 @@
         ROWS: ROWS,
         PIP_MAX_HP: PIP_MAX_HP,
         CTX_OPTIONS: CTX_OPTIONS,
+        SYS_RULES: SYS_RULES,
+        SYS_PENALTY: SYS_PENALTY,
+        sysEffects: sysEffects,
         ctxVram: ctxVram,
         routeLength: routeLength,
         SPIKE_PENALTY: SPIKE_PENALTY,
