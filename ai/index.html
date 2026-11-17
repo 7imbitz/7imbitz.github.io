@@ -37,6 +37,14 @@
         <!-- ================= GRIMOIRE ================= -->
         <section id="grimoire" class="hub" aria-label="Grimoire" hidden>
             <p class="hub-intro" id="grim-intro"></p>
+            <div class="grim-search">
+                <label for="grim-search" data-t="Search the Grimoire">Search the Grimoire</label>
+                <div class="grim-search-row">
+                    <input type="search" id="grim-search" autocomplete="off" spellcheck="false">
+                    <button type="button" class="ghost" id="grim-clear" data-t="Clear" hidden>Clear</button>
+                </div>
+                <p class="small" id="grim-results" aria-live="polite"></p>
+            </div>
             <div id="grimoire-list"></div>
         </section>
 

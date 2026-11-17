@@ -668,8 +668,202 @@
         stuck:      { dungeon: 'forge',  title: 'Greedy decoding',           where: 'The Garden of Wonders', line: 'At temperature 0 a model can loop. A little randomness lets it explore.' }
     };
 
+
+    /*
+     * Sources and further reading for every lesson card. These are links to outside pages, checked when they
+     * were added. They are meant for going deeper, and the game's own lessons are short summaries of the ideas.
+     * Titles are proper names and are not translated. s = kind of source.
+     */
+    var W = 'Wikipedia';
+    var REFS = {
+        rules: [
+            { t: 'Rule-based system', s: W, u: 'https://en.wikipedia.org/wiki/Rule-based_system' },
+            { t: 'Symbolic artificial intelligence', s: W, u: 'https://en.wikipedia.org/wiki/Symbolic_artificial_intelligence' }
+        ],
+        learning: [
+            { t: 'Machine Learning Crash Course', s: 'Google', u: 'https://developers.google.com/machine-learning/crash-course' },
+            { t: 'Machine learning', s: W, u: 'https://en.wikipedia.org/wiki/Machine_learning' }
+        ],
+        vault: [
+            { t: 'Rules of Machine Learning: best practices for ML engineering', s: 'Google', u: 'https://developers.google.com/machine-learning/guides/rules-of-ml' },
+            { t: 'Rule-based system', s: W, u: 'https://en.wikipedia.org/wiki/Rule-based_system' }
+        ],
+        kinds: [
+            { t: 'Large language model', s: W, u: 'https://en.wikipedia.org/wiki/Large_language_model' },
+            { t: 'Machine learning tasks', s: 'Hugging Face', u: 'https://huggingface.co/tasks' },
+            { t: 'LLM Course', s: 'Hugging Face', u: 'https://huggingface.co/learn/llm-course/chapter1/1' }
+        ],
+        tokens: [
+            { t: 'Attention Is All You Need', s: 'arXiv paper', u: 'https://arxiv.org/abs/1706.03762' },
+            { t: 'LLM Course: how language models work', s: 'Hugging Face', u: 'https://huggingface.co/learn/llm-course/chapter1/1' },
+            { t: 'Large language model', s: W, u: 'https://en.wikipedia.org/wiki/Large_language_model' }
+        ],
+        agent: [
+            { t: 'Building effective agents', s: 'Anthropic', u: 'https://www.anthropic.com/research/building-effective-agents' },
+            { t: 'ReAct: Synergizing Reasoning and Acting in Language Models', s: 'arXiv paper', u: 'https://arxiv.org/abs/2210.03629' }
+        ],
+        quant: [
+            { t: 'Quantization overview', s: 'Hugging Face', u: 'https://huggingface.co/docs/transformers/main/en/quantization/overview' },
+            { t: 'LLM.int8(): 8-bit Matrix Multiplication for Transformers at Scale', s: 'arXiv paper', u: 'https://arxiv.org/abs/2208.07339' },
+            { t: 'GPTQ: Accurate Post-Training Quantization', s: 'arXiv paper', u: 'https://arxiv.org/abs/2210.17323' }
+        ],
+        privacy: [
+            { t: 'NIST Privacy Framework', s: 'NIST', u: 'https://www.nist.gov/privacy-framework' },
+            { t: 'Personal Data Protection Department, Malaysia (PDPA)', s: 'JPDP', u: 'https://www.pdp.gov.my' },
+            { t: 'Ollama: run models on your own machine', s: 'Ollama', u: 'https://ollama.com' }
+        ],
+        cost: [
+            { t: 'Break-even point', s: W, u: 'https://en.wikipedia.org/wiki/Break-even_(economics)' },
+            { t: 'LLM inference optimization', s: 'NVIDIA', u: 'https://developer.nvidia.com/blog/mastering-llm-techniques-inference-optimization/' }
+        ],
+        sysprompt: [
+            { t: 'Prompting best practices: give Claude a role', s: 'Anthropic docs', u: 'https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices#give-claude-a-role' },
+            { t: 'Prompt engineering', s: 'OpenAI docs', u: 'https://developers.openai.com/api/docs/guides/prompt-engineering' }
+        ],
+        context: [
+            { t: 'Lost in the Middle: How Language Models Use Long Contexts', s: 'arXiv paper', u: 'https://arxiv.org/abs/2307.03172' },
+            { t: 'Context windows', s: 'Anthropic docs', u: 'https://platform.claude.com/docs/en/build-with-claude/context-windows' }
+        ],
+        tokenunits: [
+            { t: 'Tokenization algorithms', s: 'Hugging Face', u: 'https://huggingface.co/docs/transformers/tokenizer_summary' },
+            { t: 'Neural Machine Translation of Rare Words with Subword Units', s: 'arXiv paper', u: 'https://arxiv.org/abs/1508.07909' }
+        ],
+        hallucination: [
+            { t: 'A Survey on Hallucination in Large Language Models', s: 'arXiv paper', u: 'https://arxiv.org/abs/2311.05232' },
+            { t: 'Survey of Hallucination in Natural Language Generation', s: 'arXiv paper', u: 'https://arxiv.org/abs/2202.03629' }
+        ],
+        grounding: [
+            { t: 'Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks', s: 'arXiv paper', u: 'https://arxiv.org/abs/2005.11401' },
+            { t: 'Contextual retrieval', s: 'Anthropic', u: 'https://www.anthropic.com/research/contextual-retrieval' },
+            { t: 'Retrieval-augmented generation', s: W, u: 'https://en.wikipedia.org/wiki/Retrieval-augmented_generation' }
+        ],
+        injection: [
+            { t: 'LLM01: Prompt Injection', s: 'OWASP', u: 'https://genai.owasp.org/llmrisk/llm01-prompt-injection/' },
+            { t: 'Prompt injection series', s: 'Simon Willison', u: 'https://simonwillison.net/series/prompt-injection/' },
+            { t: 'Not what you\'ve signed up for: Indirect Prompt Injection', s: 'arXiv paper', u: 'https://arxiv.org/abs/2302.12173' }
+        ],
+        speed: [
+            { t: 'Mastering LLM Techniques: Inference Optimization', s: 'NVIDIA', u: 'https://developer.nvidia.com/blog/mastering-llm-techniques-inference-optimization/' },
+            { t: 'LLM inference optimization', s: 'Hugging Face', u: 'https://huggingface.co/docs/transformers/llm_optims' }
+        ],
+        cache: [
+            { t: 'Prompt caching', s: 'Anthropic docs', u: 'https://platform.claude.com/docs/en/build-with-claude/prompt-caching' },
+            { t: 'Prompt caching', s: 'OpenAI docs', u: 'https://developers.openai.com/api/docs/guides/prompt-caching' },
+            { t: 'Efficient Memory Management for LLM Serving with PagedAttention', s: 'arXiv paper', u: 'https://arxiv.org/abs/2309.06180' }
+        ],
+        guardrails: [
+            { t: 'Constitutional AI: Harmlessness from AI Feedback', s: 'arXiv paper', u: 'https://arxiv.org/abs/2212.08073' },
+            { t: 'Training language models to follow instructions with human feedback', s: 'arXiv paper', u: 'https://arxiv.org/abs/2203.02155' },
+            { t: 'NeMo Guardrails', s: 'NVIDIA, GitHub', u: 'https://github.com/NVIDIA-NeMo/Guardrails' }
+        ],
+        multimodal: [
+            { t: 'Visual Instruction Tuning (LLaVA)', s: 'arXiv paper', u: 'https://arxiv.org/abs/2304.08485' },
+            { t: 'Learning Transferable Visual Models From Natural Language Supervision (CLIP)', s: 'arXiv paper', u: 'https://arxiv.org/abs/2103.00020' }
+        ],
+        mediatokens: [
+            { t: 'An Image is Worth 16x16 Words (Vision Transformer)', s: 'arXiv paper', u: 'https://arxiv.org/abs/2010.11929' },
+            { t: 'Robust Speech Recognition via Large-Scale Weak Supervision (Whisper)', s: 'arXiv paper', u: 'https://arxiv.org/abs/2212.04356' },
+            { t: 'Vision: how image size becomes tokens', s: 'Anthropic docs', u: 'https://platform.claude.com/docs/en/build-with-claude/vision' }
+        ],
+        visionvram: [
+            { t: 'Transformer Inference Arithmetic', s: 'kipply\'s blog', u: 'https://kipp.ly/p/transformer-inference-arithmetic' },
+            { t: 'Multimodal support in llama.cpp', s: 'GitHub', u: 'https://github.com/ggml-org/llama.cpp/blob/master/docs/multimodal.md' }
+        ],
+        gpus: [
+            { t: 'CUDA platform', s: 'NVIDIA', u: 'https://developer.nvidia.com/cuda' },
+            { t: 'Metal overview', s: 'Apple', u: 'https://developer.apple.com/metal/' },
+            { t: 'Vulkan', s: 'Khronos Group', u: 'https://www.vulkan.org/' }
+        ],
+        engines: [
+            { t: 'llama.cpp', s: 'GitHub', u: 'https://github.com/ggml-org/llama.cpp' },
+            { t: 'vLLM documentation', s: 'vLLM', u: 'https://docs.vllm.ai/en/latest/' },
+            { t: 'Ollama', s: 'GitHub', u: 'https://github.com/ollama/ollama' },
+            { t: 'TensorFold: an inference engine for Metal, CUDA and Vulkan', s: 'GitHub', u: 'https://github.com/ashhart/TensorFold' },
+            { t: 'Fast Inference from Transformers via Speculative Decoding', s: 'arXiv paper', u: 'https://arxiv.org/abs/2211.17192' }
+        ],
+        bandwidth: [
+            { t: 'Transformer Inference Arithmetic', s: 'kipply\'s blog', u: 'https://kipp.ly/p/transformer-inference-arithmetic' },
+            { t: 'Roofline model', s: W, u: 'https://en.wikipedia.org/wiki/Roofline_model' },
+            { t: 'Mastering LLM Techniques: Inference Optimization', s: 'NVIDIA', u: 'https://developer.nvidia.com/blog/mastering-llm-techniques-inference-optimization/' }
+        ],
+        jailbreaks: [
+            { t: 'Jailbroken: How Does LLM Safety Training Fail?', s: 'arXiv paper', u: 'https://arxiv.org/abs/2307.02483' },
+            { t: 'Universal and Transferable Adversarial Attacks on Aligned Language Models', s: 'arXiv paper', u: 'https://arxiv.org/abs/2307.15043' },
+            { t: 'LLM01: Prompt Injection', s: 'OWASP', u: 'https://genai.owasp.org/llmrisk/llm01-prompt-injection/' }
+        ],
+        layers: [
+            { t: 'Defense in depth (computing)', s: W, u: 'https://en.wikipedia.org/wiki/Defense_in_depth_(computing)' },
+            { t: 'OWASP Top 10 for LLM applications', s: 'OWASP', u: 'https://genai.owasp.org/llm-top-10/' },
+            { t: 'AI Risk Management Framework', s: 'NIST', u: 'https://www.nist.gov/itl/ai-risk-management-framework' }
+        ],
+        modifiedmodels: [
+            { t: 'Refusal in Language Models Is Mediated by a Single Direction', s: 'arXiv paper', u: 'https://arxiv.org/abs/2406.11717' },
+            { t: 'Uncensor any LLM with abliteration', s: 'Hugging Face blog', u: 'https://huggingface.co/blog/mlabonne/abliteration' }
+        ],
+        teams: [
+            { t: 'How we built our multi-agent research system', s: 'Anthropic', u: 'https://www.anthropic.com/research/multi-agent-research-system' },
+            { t: 'AutoGen: Next-Gen LLM Applications via Multi-Agent Conversation', s: 'arXiv paper', u: 'https://arxiv.org/abs/2308.08155' },
+            { t: 'Building effective agents', s: 'Anthropic', u: 'https://www.anthropic.com/research/building-effective-agents' }
+        ],
+        agentfiles: [
+            { t: 'How Claude Code remembers your project (memory files)', s: 'Claude Code docs', u: 'https://code.claude.com/docs/en/memory' },
+            { t: 'AGENTS.md: instructions for coding agents', s: 'agents.md', u: 'https://agents.md' },
+            { t: 'Agent Skills', s: 'Claude docs', u: 'https://platform.claude.com/docs/en/agents-and-tools/agent-skills/overview' }
+        ],
+        agentmemory: [
+            { t: 'MemGPT: Towards LLMs as Operating Systems', s: 'arXiv paper', u: 'https://arxiv.org/abs/2310.08560' },
+            { t: 'Generative Agents: Interactive Simulacra of Human Behavior', s: 'arXiv paper', u: 'https://arxiv.org/abs/2304.03442' }
+        ],
+        toolspec: [
+            { t: 'Tool use with Claude', s: 'Anthropic docs', u: 'https://platform.claude.com/docs/en/agents-and-tools/tool-use/overview' },
+            { t: 'Function calling', s: 'OpenAI docs', u: 'https://developers.openai.com/api/docs/guides/function-calling' },
+            { t: 'Toolformer: Language Models Can Teach Themselves to Use Tools', s: 'arXiv paper', u: 'https://arxiv.org/abs/2302.04761' }
+        ],
+        mcp: [
+            { t: 'What is the Model Context Protocol?', s: 'modelcontextprotocol.io', u: 'https://modelcontextprotocol.io' },
+            { t: 'MCP specification', s: 'modelcontextprotocol.io', u: 'https://modelcontextprotocol.io/specification' }
+        ],
+        toolerrors: [
+            { t: 'Writing effective tools for AI agents', s: 'Anthropic', u: 'https://www.anthropic.com/research/writing-tools-for-agents' },
+            { t: 'Tool use with Claude', s: 'Anthropic docs', u: 'https://platform.claude.com/docs/en/agents-and-tools/tool-use/overview' }
+        ],
+        agentloop: [
+            { t: 'Building effective agents', s: 'Anthropic', u: 'https://www.anthropic.com/research/building-effective-agents' },
+            { t: 'ReAct: Synergizing Reasoning and Acting in Language Models', s: 'arXiv paper', u: 'https://arxiv.org/abs/2210.03629' }
+        ],
+        guards: [
+            { t: 'Building effective agents', s: 'Anthropic', u: 'https://www.anthropic.com/research/building-effective-agents' },
+            { t: 'LLM06: Excessive Agency', s: 'OWASP', u: 'https://genai.owasp.org/llmrisk/llm062025-excessive-agency/' }
+        ],
+        autonomy: [
+            { t: 'LLM06: Excessive Agency', s: 'OWASP', u: 'https://genai.owasp.org/llmrisk/llm062025-excessive-agency/' },
+            { t: 'Configure permissions', s: 'Claude Code docs', u: 'https://code.claude.com/docs/en/permissions' }
+        ],
+        sysrules: [
+            { t: 'Modelfile reference (the SYSTEM instruction)', s: 'Ollama docs', u: 'https://docs.ollama.com/modelfile' },
+            { t: 'Prompting best practices: give Claude a role', s: 'Anthropic docs', u: 'https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices#give-claude-a-role' }
+        ],
+        numctx: [
+            { t: 'Context length', s: 'Ollama docs', u: 'https://docs.ollama.com/context-length' },
+            { t: 'Modelfile reference (PARAMETER num_ctx)', s: 'Ollama docs', u: 'https://docs.ollama.com/modelfile' }
+        ],
+        contrast: [
+            { t: 'How to generate text: different decoding methods', s: 'Hugging Face blog', u: 'https://huggingface.co/blog/how-to-generate' },
+            { t: 'The Curious Case of Neural Text Degeneration', s: 'arXiv paper', u: 'https://arxiv.org/abs/1904.09751' }
+        ],
+        sampling: [
+            { t: 'How to generate text: different decoding methods', s: 'Hugging Face blog', u: 'https://huggingface.co/blog/how-to-generate' },
+            { t: 'The Curious Case of Neural Text Degeneration', s: 'arXiv paper', u: 'https://arxiv.org/abs/1904.09751' }
+        ],
+        stuck: [
+            { t: 'How to generate text: greedy search and repetition', s: 'Hugging Face blog', u: 'https://huggingface.co/blog/how-to-generate' },
+            { t: 'The Curious Case of Neural Text Degeneration', s: 'arXiv paper', u: 'https://arxiv.org/abs/1904.09751' }
+        ]
+    };
+
     var api = { DUNGEON_STORY: DUNGEON_STORY, STORY: STORY, LESSONS: LESSONS, CARD_META: CARD_META };
     if (root.I18n) { root.I18n.deep(api); }
+    api.REFS = REFS; // outside links keep their original titles, so they are added after the translation pass
     if (typeof module !== 'undefined' && module.exports) { module.exports = api; }
     root.Content = api;
 })(typeof window !== 'undefined' ? window : globalThis);

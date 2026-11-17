@@ -671,3 +671,17 @@ button.doc { display: grid; gap: 0.15em; text-align: left; white-space: normal; 
 .rule-card:hover { border-color: var(--accent); }
 .rule-card.on { background: var(--accent); color: #14101f; border-color: var(--accent); font-weight: bold; }
 .rule-preview { background: #0c0818; border: 2px solid var(--panel-border); border-radius: 6px; padding: 0.5em 0.7em; margin: 0.4em 0; color: var(--green); white-space: pre-wrap; font-size: 0.9em; }
+
+/* ---------- grimoire search and sources ---------- */
+.grim-search { margin: 0.6em 0 1em; }
+.grim-search label { display: block; font-size: 0.8em; color: var(--muted); margin-bottom: 0.3em; }
+.grim-search-row { display: flex; gap: 0.4em; }
+.grim-search input[type="search"] { flex: 1; min-width: 0; padding: 0.5em 0.7em; background: #120d22; color: var(--text); border: 2px solid var(--panel-border); border-radius: 6px; font: inherit; }
+.grim-search input[type="search"]:focus { outline: none; border-color: var(--accent); }
+.gcard .g-refs { margin-top: 0.8em; padding-top: 0.6em; border-top: 1px dashed var(--panel-border); }
+.gcard .g-refs-title { margin: 0 0 0.3em; font-weight: bold; color: var(--muted); font-size: 0.85em; }
+.gcard .g-refs ul { margin: 0; padding-left: 1.2em; }
+.gcard .g-refs li { margin: 0.25em 0; }
+.g-refs a, .refs-line a { color: var(--cyan); word-break: break-word; }
+.ref-src { color: var(--muted); font-size: 0.85em; }
+.refs-line { display: block; font-size: 0.8em; line-height: 1.5; color: var(--muted); }

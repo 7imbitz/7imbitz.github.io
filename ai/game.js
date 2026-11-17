@@ -39,7 +39,7 @@
         bars: $('bars'), hp: $('hp'), objective: $('objective'),
         note: $('note'), floorLabel: $('floor-label'), log: $('log'),
         hub: $('hub'), hubGroups: $('hub-groups'), game: $('game'),
-        grimoire: $('grimoire'), grimList: $('grimoire-list'), grimCount: $('grim-count'), grimIntro: $('grim-intro'), openGrim: $('open-grimoire'),
+        grimoire: $('grimoire'), grimList: $('grimoire-list'), grimSearch: $('grim-search'), grimClear: $('grim-clear'), grimResults: $('grim-results'), grimCount: $('grim-count'), grimIntro: $('grim-intro'), openGrim: $('open-grimoire'),
         toHub: $('to-hub'), backLink: $('back-link'),
         screenWrap: $('screen-wrap'), puzzle: $('puzzle'),
         hud: $('hud'), panelDial: $('panel-dial'), panelBars: $('panel-bars'),
@@ -539,7 +539,23 @@
     /* ------------------------------------------------------------------ */
     var LESSONS = C.LESSONS;
 
-    function lessonPages(key) { return [LESSONS[key]]; }
+    var REFS = C.REFS || {};
+
+    function escHtml(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+
+    // A link to an outside page. The titles are fixed strings from content.js.
+    function refLinkHtml(r) {
+        return '<a href="' + escHtml(r.u) + '" target="_blank" rel="noopener noreferrer">' + escHtml(r.t) + '</a> <span class="ref-src">(' + escHtml(r.s) + ')</span>';
+    }
+
+    function lessonPages(key) {
+        var page = LESSONS[key].slice();
+        var refs = REFS[key];
+        if (refs && refs.length) {
+            page.push('<span class="refs-line"><b>' + escHtml(tr('Learn more')) + ':</b> ' + refs.map(refLinkHtml).join(' &middot; ') + '</span>');
+        }
+        return [page];
+    }
 
     // Show a lesson card the first time it is relevant.
     function maybeShowLesson(key) {
@@ -1315,19 +1331,46 @@
         el.grimCount.textContent = t.got + ' / ' + t.total;
     }
 
+    // The plain text of a card, used for searching. Locked cards only offer what is already shown on them.
+    function cardSearchText(k) {
+        var m = CARD_META[k];
+        var d = dungeonById(m.dungeon);
+        if (!isCollected(k)) { return (m.where + ' ' + (d ? d.title : '')).toLowerCase(); }
+        var body = LESSONS[k].join(' ').replace(/<[^>]*>/g, ' ');
+        var refs = (REFS[k] || []).map(function (r) { return r.t + ' ' + r.s; }).join(' ');
+        return [m.title, m.where, m.line, d ? d.title : '', body, refs].join(' ').toLowerCase();
+    }
+
+    function matchesQuery(k, terms) {
+        if (!terms.length) { return true; }
+        var text = cardSearchText(k);
+        return terms.every(function (t) { return text.indexOf(t) >= 0; });
+    }
+
     function renderGrimoire() {
         el.grimList.textContent = '';
         var t = grimoireTotals();
+        var query = (el.grimSearch && el.grimSearch.value || '').trim().toLowerCase();
+        var terms = query ? query.split(/\s+/) : [];
         el.grimIntro.textContent = tr('You have collected {got} of {total} cards. Each one is an idea from a dungeon. Open a card to read it again. Locked cards show where to find them.', { got: t.got, total: t.total });
+        el.grimClear.hidden = !query;
+        var found = 0;
+        var openAll = false;
+        if (terms.length) {
+            var count = Object.keys(CARD_META).filter(function (k) { return matchesQuery(k, terms); }).length;
+            openAll = count <= 5;
+        }
         L.DUNGEONS.forEach(function (d) {
-            var keys = Object.keys(CARD_META).filter(function (k) { return CARD_META[k].dungeon === d.id; });
+            var keys = Object.keys(CARD_META).filter(function (k) { return CARD_META[k].dungeon === d.id && matchesQuery(k, terms); });
             if (!keys.length) { return; }
             el.grimList.appendChild(mk('h2', 'group-title', d.title));
             var grid = mk('div', 'gcards');
             keys.forEach(function (k) {
                 var m = CARD_META[k];
+                found++;
                 if (isCollected(k)) {
                     var card = mk('details', 'gcard');
+                    if (openAll) { card.open = true; }
                     var sum = mk('summary', '');
                     sum.appendChild(mk('span', 'g-title', m.title));
                     sum.appendChild(mk('span', 'g-where', m.where));
@@ -1339,6 +1382,19 @@
                         p.innerHTML = html; // constant strings from LESSONS above, never user input
                         body.appendChild(p);
                     });
+                    var refs = REFS[k];
+                    if (refs && refs.length) {
+                        var box = mk('div', 'g-refs');
+                        box.appendChild(mk('p', 'g-refs-title', tr('Sources and further reading')));
+                        var ul = document.createElement('ul');
+                        refs.forEach(function (r) {
+                            var li = document.createElement('li');
+                            li.innerHTML = refLinkHtml(r); // fixed strings from content.js
+                            ul.appendChild(li);
+                        });
+                        box.appendChild(ul);
+                        body.appendChild(box);
+                    }
                     card.appendChild(body);
                     grid.appendChild(card);
                 } else {
@@ -1350,6 +1406,14 @@
             });
             el.grimList.appendChild(grid);
         });
+        if (!terms.length) {
+            el.grimResults.textContent = tr('Links in the cards open outside pages in a new tab. They are in English.');
+        } else if (!found) {
+            el.grimResults.textContent = tr('No cards match "{q}".', { q: query });
+        } else {
+            var lockedCount = Object.keys(CARD_META).filter(function (k) { return !isCollected(k); }).length;
+            el.grimResults.textContent = tr('{n} cards found.', { n: found }) + (lockedCount ? ' ' + tr('The {n} locked cards are not searched, because their lessons are still hidden.', { n: lockedCount }) : '');
+        }
     }
 
     function showGrimoire() {
@@ -1358,6 +1422,7 @@
         el.toHub.hidden = false;
         el.backLink.hidden = true;
         el.floorLabel.textContent = tr('Grimoire');
+        el.grimSearch.value = '';
         renderGrimoire();
         if (window.scrollTo) { window.scrollTo(0, 0); }
     }
@@ -1519,6 +1584,9 @@
 
     el.toHub.addEventListener('click', showHub);
     el.openGrim.addEventListener('click', showGrimoire);
+    el.grimSearch.setAttribute('placeholder', tr('Search the Grimoire') + ': num_ctx, token, MCP...');
+    el.grimSearch.addEventListener('input', renderGrimoire);
+    el.grimClear.addEventListener('click', function () { el.grimSearch.value = ''; renderGrimoire(); el.grimSearch.focus(); });
 
     /* ------------------------------------------------------------------ */
     /* Boot                                                                */
