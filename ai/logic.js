@@ -454,6 +454,7 @@
         simulate: simulate
     };
 
+    if (root.I18n) { root.I18n.deep(api); } // translate dungeon and room text in place
     if (typeof module !== 'undefined' && module.exports) { module.exports = api; }
     root.Logic = api;
 })(typeof window !== 'undefined' ? window : globalThis);

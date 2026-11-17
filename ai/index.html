@@ -13,18 +13,22 @@
 <body>
     <main class="wrap">
         <header class="bar">
-            <a class="back" id="back-link" href="../docs/codings.html">&larr; Codings</a>
-            <button class="back-btn" id="to-hub" type="button" hidden>&larr; Dungeons</button>
+            <a class="back" id="back-link" href="../docs/codings.html" data-t="← Codings">&larr; Codings</a>
+            <button class="back-btn" id="to-hub" type="button" data-t="← Dungeons" hidden>&larr; Dungeons</button>
             <h1>Dungeon of Weights</h1>
             <p class="floor" id="floor-label">Choose a dungeon</p>
+            <div class="lang" role="group" aria-label="Language" data-t-aria="Language">
+                <button class="lang-btn" id="lang-en" type="button" aria-label="English">EN</button>
+                <button class="lang-btn" id="lang-bm" type="button" aria-label="Bahasa Malaysia">BM</button>
+            </div>
         </header>
 
         <!-- ================= HUB ================= -->
         <section id="hub" class="hub" aria-label="Dungeon select">
-            <p class="hub-intro">Each dungeon teaches a different idea about AI. Clear the Basics in order, then try the bonus dungeons. Your progress is saved in this browser.</p>
+            <p class="hub-intro" data-t="Each dungeon teaches a different idea about AI. Clear the Basics in order, then try the bonus dungeons. Your progress is saved in this browser.">Each dungeon teaches a different idea about AI. Clear the Basics in order, then try the bonus dungeons. Your progress is saved in this browser.</p>
             <div class="hub-tools">
-                <button class="grim-btn" id="open-grimoire" type="button">&#128214; Grimoire <span id="grim-count"></span></button>
-                <span class="small">Every idea you learn is collected here as a card you can revisit.</span>
+                <button class="grim-btn" id="open-grimoire" type="button">&#128214; <span data-t="Grimoire">Grimoire</span> <span id="grim-count"></span></button>
+                <span class="small" data-t="Every idea you learn is collected here as a card you can revisit.">Every idea you learn is collected here as a card you can revisit.</span>
             </div>
             <div id="hub-groups"></div>
         </section>
@@ -38,7 +42,7 @@
         <!-- ================= GAME ================= -->
         <div id="game" hidden>
             <div class="screen-wrap" id="screen-wrap">
-                <canvas id="screen" aria-label="Game screen"></canvas>
+                <canvas id="screen" aria-label="Game screen" data-t-aria="Game screen"></canvas>
                 <div class="overlay" id="overlay" hidden>
                     <div class="card" role="dialog" aria-modal="true" aria-labelledby="ov-title">
                         <h2 id="ov-title"></h2>
@@ -52,22 +56,22 @@
                 <div class="puzzle" id="puzzle" hidden></div>
             </div>
 
-            <section class="hud" id="hud" aria-label="Controls and status">
+            <section class="hud" id="hud" aria-label="Controls and status" data-t-aria="Controls and status">
                 <div class="panel" id="panel-dial">
-                    <h3>Temperature</h3>
+                    <h3 data-t="Temperature">Temperature</h3>
                     <div class="dial">
-                        <button type="button" id="t-down" aria-label="Lower temperature">&minus;</button>
-                        <input type="range" id="temp" min="0" max="2" step="0.1" value="0" aria-label="Temperature">
-                        <button type="button" id="t-up" aria-label="Raise temperature">+</button>
+                        <button type="button" id="t-down" aria-label="Lower temperature" data-t-aria="Lower temperature">&minus;</button>
+                        <input type="range" id="temp" min="0" max="2" step="0.1" value="0" aria-label="Temperature" data-t-aria="Temperature">
+                        <button type="button" id="t-up" aria-label="Raise temperature" data-t-aria="Raise temperature">+</button>
                     </div>
                     <p class="dial-value"><span id="t-value">0.0</span> <span id="t-label"></span></p>
-                    <p class="small">Keys: <kbd>Q</kbd> colder &middot; <kbd>E</kbd> hotter</p>
+                    <p class="small" data-t-html="Keys: &lt;kbd&gt;Q&lt;/kbd&gt; colder · &lt;kbd&gt;E&lt;/kbd&gt; hotter">Keys: <kbd>Q</kbd> colder &middot; <kbd>E</kbd> hotter</p>
                 </div>
 
                 <div class="panel" id="panel-bars">
-                    <h3>Pip's next move</h3>
+                    <h3 data-t="Pip's next move">Pip's next move</h3>
                     <div class="bars" id="bars"></div>
-                    <p class="small">Chance of each move, like next-token odds.</p>
+                    <p class="small" data-t="Chance of each move, like next-token odds.">Chance of each move, like next-token odds.</p>
                 </div>
 
                 <div class="panel" id="panel-pip">
@@ -80,24 +84,34 @@
             <section class="note" id="note" aria-live="polite"></section>
 
             <section class="panel log-panel" id="log-panel" aria-label="Pip's decision log">
-                <h3>Why Pip chose that</h3>
+                <h3 data-t="Why Pip chose that">Why Pip chose that</h3>
                 <ol class="log" id="log"></ol>
-                <p class="small">Each line shows the chance Pip had of picking that move and how it ranked. Low temperature means mostly 1st choices. High temperature means more 2nd to 4th.</p>
+                <p class="small" data-t="Each line shows the chance Pip had of picking that move and how it ranked. Low temperature means mostly 1st choices. High temperature means more 2nd to 4th.">Each line shows the chance Pip had of picking that move and how it ranked. Low temperature means mostly 1st choices. High temperature means more 2nd to 4th.</p>
             </section>
 
-            <div class="dpad" aria-label="Touch controls">
-                <button type="button" data-dx="0" data-dy="-1" aria-label="Up">&uarr;</button>
-                <button type="button" data-dx="-1" data-dy="0" aria-label="Left">&larr;</button>
-                <button type="button" data-dx="0" data-dy="1" aria-label="Down">&darr;</button>
-                <button type="button" data-dx="1" data-dy="0" aria-label="Right">&rarr;</button>
+            <div class="dpad" aria-label="Touch controls" data-t-aria="Touch controls">
+                <button type="button" data-dx="0" data-dy="-1" aria-label="Up" data-t-aria="Up">&uarr;</button>
+                <button type="button" data-dx="-1" data-dy="0" aria-label="Left" data-t-aria="Left">&larr;</button>
+                <button type="button" data-dx="0" data-dy="1" aria-label="Down" data-t-aria="Down">&darr;</button>
+                <button type="button" data-dx="1" data-dy="0" aria-label="Right" data-t-aria="Right">&rarr;</button>
             </div>
 
-            <p class="keys">Move the Hero with <kbd>WASD</kbd> or arrow keys &middot; walk into a golem to challenge it<span id="keys-dial"> &middot; <kbd>Q</kbd>/<kbd>E</kbd> or the slider changes Pip's temperature</span> &middot; <kbd>R</kbd> restarts the room</p>
+            <p class="keys"><span data-t-html="Move the Hero with &lt;kbd&gt;WASD&lt;/kbd&gt; or arrow keys">Move the Hero with <kbd>WASD</kbd> or arrow keys</span> &middot; <span data-t="walk into a golem to challenge it">walk into a golem to challenge it</span><span id="keys-dial"> &middot; <span data-t-html="&lt;kbd&gt;Q&lt;/kbd&gt;/&lt;kbd&gt;E&lt;/kbd&gt; or the slider changes Pip's temperature"><kbd>Q</kbd>/<kbd>E</kbd> or the slider changes Pip's temperature</span></span> &middot; <span data-t-html="&lt;kbd&gt;R&lt;/kbd&gt; restarts the room"><kbd>R</kbd> restarts the room</span></p>
         </div>
     </main>
 
+    <script src="i18n.js"></script>
+    <script>
+        // Load the Bahasa Malaysia dictionary only when that language is selected.
+        (function () {
+            try {
+                if (localStorage.getItem('dungeon-of-weights.lang') === 'bm') { document.write('<script src="lang-bm.js"><\/script>'); }
+            } catch (e) { /* storage blocked: English */ }
+        })();
+    </script>
     <script src="logic.js"></script>
     <script src="puzzles.js"></script>
+    <script src="content.js"></script>
     <script src="puzzle-ui.js"></script>
     <script src="game.js"></script>
 </body>

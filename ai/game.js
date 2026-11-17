@@ -7,6 +7,11 @@
     'use strict';
 
     var L = window.Logic;
+    var C = window.Content;
+    // i18n: English text is the key (see i18n.js). Falls back to plain English with placeholders filled.
+    var tr = (window.I18n && window.I18n.t) || function (key, vars) {
+        return vars ? key.replace(/\{(\w+)\}/g, function (m, n) { return vars[n] !== undefined ? vars[n] : m; }) : key;
+    };
     var UI = window.PuzzleUI;
     var TILE = 16;
     var COLS = L.COLS;
@@ -36,7 +41,8 @@
         toHub: $('to-hub'), backLink: $('back-link'),
         screenWrap: $('screen-wrap'), puzzle: $('puzzle'),
         hud: $('hud'), panelDial: $('panel-dial'), panelBars: $('panel-bars'),
-        pipTitle: $('pip-title'), logPanel: $('log-panel'), keysDial: $('keys-dial')
+        pipTitle: $('pip-title'), logPanel: $('log-panel'), keysDial: $('keys-dial'),
+        langEn: $('lang-en'), langBm: $('lang-bm')
     };
 
     /* ------------------------------------------------------------------ */
@@ -258,220 +264,9 @@
     /* Story text                                                          */
     /* ------------------------------------------------------------------ */
     // Dungeon-level intro and clear text, keyed by dungeon id.
-    var DUNGEON_STORY = {
-        ai: {
-            intro: [
-                ['Everything down here claims to be <b>intelligent</b>: the golems, the doors, even the traps. Before you trust any of them, ask a simple question: <b>what is AI?</b>'],
-                ['Normal software follows <b>rules</b> a person wrote: IF this, THEN that. Modern AI usually means software that <b>learns patterns from examples</b> instead.',
-                    'Three chambers lie ahead. Two golems guard doors: one runs on rules, one learns. Find out when you would trust each.',
-                    '<span class="tip">Walk into a golem to challenge it.</span>']
-            ],
-            introButton: 'Enter the dungeon',
-            clearTitle: 'What Is AI? cleared!',
-            clear: [
-                ['<b>Loot: Pip!</b> Your first AI companion joins you.',
-                    '<b>Rules</b> do exactly what you wrote, so they are predictable and explainable, but only cover cases you thought of.',
-                    '<b>Learning</b> finds the pattern from examples, so it copes with fuzzy problems and new cases, but it can be wrong and it needs good data.'],
-                ['How the words fit together: <b>AI</b> is the broad field. <b>Machine learning</b> is the part that learns from data. <b>Deep learning</b> uses large neural networks. <b>LLMs</b>, the chatbots, are deep-learning models trained on huge amounts of text.',
-                    '<span class="tip">Next: Kinds of Models. What does a language model really do, and what turns it into an agent?</span>']
-            ],
-            clearButton: 'Back to the dungeons'
-        },
-        models: {
-            intro: [
-                ['"AI" is not one thing. A spam filter, a chatbot and a logo painter are different <b>kinds</b> of model, built for different jobs.'],
-                ['Three chambers lie ahead: sort jobs by kind of model, find out how a language model really produces text, and see what <b>tools</b> turn a model into an agent.',
-                    '<span class="tip">Walk into a golem to challenge it.</span>']
-            ],
-            introButton: 'Enter the dungeon',
-            clearTitle: 'Kinds of Models cleared!',
-            clear: [
-                ['<b>Loot: the Tool Belt.</b>',
-                    '<b>Kinds:</b> classifiers pick labels, predictors forecast numbers, generators create content, recommenders rank, and agents act with tools.',
-                    '<b>Language models</b> generate one token at a time from probabilities. That is why they can be fluent and wrong.',
-                    '<b>Agents</b> are a model plus tools. Give a model only the tools the job needs.'],
-                ['<span class="tip">Next: Talking to Models. How do you give a model instructions, why does it forget, and what is a token really?</span>']
-            ],
-            clearButton: 'Back to the dungeons'
-        },
-        talk: {
-            intro: [
-                ['You know what kinds of models exist. Now learn to <b>talk</b> to them: how to give standing instructions, why they forget, and what a token really is.'],
-                ['Three chambers lie ahead: write a system prompt that passes four customer tests, keep a key fact inside a finite context window, and trim a prompt by its token cost.',
-                    '<span class="tip">Walk into a golem to challenge it.</span>']
-            ],
-            introButton: 'Enter the dungeon',
-            clearTitle: 'Talking to Models cleared!',
-            clear: [
-                ['<b>Loot: the Quill.</b>',
-                    'A <b>system prompt</b> is the standing brief. Be specific: a role, a format, boundaries, and what to do when a request is unclear. It guides the model but is not a lock.',
-                    'The <b>context window</b> is finite memory. When it fills, the oldest messages are forgotten, so pin what matters, summarise, and trim.',
-                    '<b>Tokens</b> are the unit you pay in, and what the model actually reads. It sees chunks, not letters.'],
-                ['<span class="tip">Next: Trust Issues. Can you believe what a model says, and what it reads?</span>']
-            ],
-            clearButton: 'Back to the dungeons'
-        },
-        trust: {
-            intro: [
-                ['You can now instruct a model and tell what it remembers. But can you <b>trust</b> what it says, and what it reads?'],
-                ['Three chambers lie ahead: check a briefing for invented claims, ground a model in the right document and pick the right door, and stop an inbox bot being hijacked by a hidden instruction.',
-                    '<span class="tip">Walk into a golem to challenge it.</span>']
-            ],
-            introButton: 'Enter the dungeon',
-            clearTitle: 'Trust Issues cleared!',
-            clear: [
-                ['<b>Loot: the Lantern.</b>',
-                    '<b>Hallucination:</b> a confident tone is not evidence. Verify the specific, the private and the high-stakes.',
-                    '<b>Grounding:</b> hand the model the right, current source. Try a prompt first, add retrieval for changing knowledge, and fine-tune last.',
-                    '<b>Prompt injection:</b> assume it can succeed, and limit what a tricked model is able to do.'],
-                ['<span class="tip">Next: Local vs Cloud. Where should a model run, and what does it cost?</span>']
-            ],
-            clearButton: 'Back to the dungeons'
-        },
-        local: {
-            intro: [
-                ['A model has to live somewhere. It can run on <b>your own machine</b> (local) or on <b>someone else\'s servers</b> (cloud). Each choice trades privacy, power and cost.'],
-                ['Three chambers lie ahead: fit a model into limited memory, decide where sensitive jobs should run, and find the point where local becomes cheaper.',
-                    '<span class="tip">Walk into a golem to challenge it.</span>']
-            ],
-            introButton: 'Enter the dungeon',
-            clearTitle: 'Local vs Cloud cleared!',
-            clear: [
-                ['<b>Loot: the Modelfile Anvil.</b> You know where models can run and what that costs.',
-                    '<b>Local:</b> private, works offline and has a fixed cost, but is limited by your hardware. Quantization lets bigger models fit.',
-                    '<b>Cloud:</b> the strongest models and no hardware to manage, but you pay per use and your data leaves your machine.'],
-                ['<span class="tip">The bonus dungeons are now open: <b>Under the Hood</b> (speed, caches, uncensored models) and <b>The Forge</b> (tweak Pip like a modelfile). The <b>Grimoire</b> on the hub keeps every idea you have learned.</span>']
-            ],
-            clearButton: 'Back to the dungeons'
-        },
-        hood: {
-            intro: [
-                ['You know what AI is, what kinds exist, and where models run. Now look <b>under the hood</b>: how fast a model runs, what it can remember cheaply, and what stops it saying certain things.'],
-                ['Three chambers lie ahead: tokens per second, caches, and the difference between a normal and an uncensored model.',
-                    '<span class="tip">Walk into a golem to challenge it.</span>']
-            ],
-            introButton: 'Enter the dungeon',
-            clearTitle: 'Under the Hood cleared!',
-            clear: [
-                ['<b>Loot: the Stopwatch.</b>',
-                    '<b>Speed</b> is tokens per second plus time to first token. Model size, quantization and hardware decide it.',
-                    '<b>Caches</b> reuse earlier work: the KV cache lives inside the model, and prompt caching reuses an identical prefix. Put stable content first.',
-                    '<b>Uncensored</b> means fewer refusals, not more intelligence. It moves the safety job from the model to you.'],
-                ['<span class="tip">Try the Forge next. Local models are tuned with a <b>modelfile</b>: temperature, context length (num_ctx) and more.</span>']
-            ],
-            clearButton: 'Back to the dungeons'
-        },
-        forge: {
-            intro: [
-                ['Welcome to the <b>Forge</b>. Local models are tuned with a <b>modelfile</b>: a small config that sets how a model behaves.',
-                    'Pip is a tiny model in a small pixel body. You steer the Hero, but Pip decides its <i>own</i> moves, and you control <b>how</b> it decides.',
-                    'This bonus dungeon teaches one dial: <b>temperature</b>.']
-            ],
-            introButton: 'Enter the Forge',
-            clearTitle: 'The Forge cleared!',
-            clear: [
-                ['<b>Loot: the Temperature Dial.</b> Yours to keep.',
-                    'Low temperature gives focused, repeatable output: good for facts, code and precision. High temperature gives varied, exploratory output: good for ideas and stories, but riskier.',
-                    'Real models work the same way: temperature rescales the odds of every possible next token.'],
-                ['<span class="tip">More dials are coming: <b>num_ctx</b> (how much Pip can remember) and the system prompt.</span>']
-            ],
-            clearButton: 'Back to the dungeons'
-        }
-    };
+    var DUNGEON_STORY = C.DUNGEON_STORY;
 
-    var STORY = {
-        rules: [
-            ['The <b>Rule Golem</b> decides if a creature is hostile or friendly using <b>rules a person wrote</b>. You are that person.',
-                'Study the labelled creatures in the bestiary. Write up to three rules (a rule fires when a creature has <b>all</b> the marks you pick). Then the golem faces 20 new arrivals.',
-                '<span class="tip">Walk into the golem to begin.</span>']
-        ],
-        learn: [
-            ['Writing rules works when the pattern is simple enough to write down. This golem faces something fuzzier: creatures with <b>enough</b> threat marks are hostile, but nobody wrote down how many, or which.',
-                'So you will <b>show it examples</b> instead and it will fit its own weights. Then it must handle creatures it has never seen.',
-                '<span class="tip">Walk into the golem to begin.</span>']
-        ],
-        vault: [
-            ['The last door tests your judgement. For each job, would you write <b>rules</b> or have software <b>learn from examples</b>?',
-                '<span class="tip">Walk into the golem to begin.</span>']
-        ],
-        sorting: [
-            ['Different jobs call for different <b>kinds</b> of model. The Sorting Gate opens only for someone who can match each job to the right kind.', '<span class="tip">Walk into a golem to challenge it.</span>']
-        ],
-        tokens: [
-            ['Language models, the engines behind chatbots, are <b>generators</b>. Here is how they really work: one token at a time, each chosen by probability.',
-                'You will play the model. Pick the next token and watch the odds.', '<span class="tip">Walk into a golem to challenge it.</span>']
-        ],
-        agent: [
-            ['A model alone can only produce text. Give it <b>tools</b> and run it in a loop, and it becomes an <b>agent</b>.',
-                'Your job: equip each task with exactly the tools it needs.', '<span class="tip">Walk into a golem to challenge it.</span>']
-        ],
-        packing: [
-            ['A local model must fit in your machine\'s memory. Bigger models are generally better, but they need more space. <b>Quantization</b> compresses a model so a bigger one can fit.', '<span class="tip">Walk into a golem to challenge it.</span>']
-        ],
-        datagate: [
-            ['Sensitive data, no internet, a very hard problem: the right home for a model depends on the job.', '<span class="tip">Walk into a golem to challenge it.</span>']
-        ],
-        toll: [
-            ['Cloud costs scale with use. Local costs are fixed. Somewhere there is a crossover, and you are about to find it.', '<span class="tip">Walk into a golem to challenge it.</span>']
-        ],
-        speed: [
-            ['A model streams its answer out <b>one token at a time</b>. How fast depends on the model\'s size, its precision and the hardware, and a long prompt delays the very first token.', '<span class="tip">Walk into a golem to challenge it.</span>']
-        ],
-        cache: [
-            ['Re-reading a long prompt on every request is wasteful. A <b>cache</b> lets the system reuse work it already did, but only on an unchanged beginning.', '<span class="tip">Walk into a golem to challenge it.</span>']
-        ],
-        guardgate: [
-            ['Some models refuse risky requests. Others have had that removed. Which one belongs where depends on who is using it and what could go wrong.', '<span class="tip">Walk into a golem to challenge it.</span>']
-        ],
-        prompt: [
-            ['Brightfix has hired you to set up its support assistant. Four customers are waiting, and the assistant will follow whatever <b>system prompt</b> you give it.',
-                'Choose the instructions to include, then run the four tests. Some instructions look fine but do nothing. One makes things worse.', '<span class="tip">Walk into a golem to challenge it.</span>']
-        ],
-        memory: [
-            ['A model can only see what fits in its <b>context window</b>. Sam told the assistant something important at the very start, and a long conversation has followed.',
-                'Decide what to keep, shrink, pin or drop so that the answer to the last question is safe.', '<span class="tip">Walk into a golem to challenge it.</span>']
-        ],
-        counter: [
-            ['Models read <b>tokens</b>, and every token is billed. A prompt that goes out a million times has to be lean, but it must still contain everything the model needs.', '<span class="tip">Walk into a golem to challenge it.</span>']
-        ],
-        verify: [
-            ['A model drafted a client briefing, and every claim sounds equally sure of itself. You do not have time to check them all.',
-                'Decide which claims deserve one of your few checks before the briefing ships.', '<span class="tip">Walk into a golem to challenge it.</span>']
-        ],
-        doors: [
-            ['Models answer best when they read from the right source. Pick the document a search tool should hand the model, then choose which of three doors fits each need.', '<span class="tip">Walk into a golem to challenge it.</span>']
-        ],
-        poison: [
-            ['MailBot reads your inbox, and the outside world can write into it. Some of that text will try to give MailBot orders.',
-                'You have room for only a few defences. Choose the ones that really hold.', '<span class="tip">Walk into a golem to challenge it.</span>']
-        ],
-        wander: [
-            ['Pip wants to reach the glowing plate. Every step it <b>scores</b> its four possible moves (closer to the plate scores higher) and then <b>picks one</b>.',
-                'The bars under the map show Pip\'s chance of each move, just like an LLM\'s next-token odds.'],
-            ['<b>Temperature</b> controls the pick. Low means Pip always takes its best-scoring move. High means it sometimes takes a worse one.',
-                'This room is a safe experiment. Send Pip across <b>once cold</b> (dial near 0) and <b>once hot</b> (1.5 or more). Pip leaves footprints so you can compare the two paths.',
-                '<span class="tip">The dial starts at 0. Use Q / E or the slider. The door opens when you have done both runs.</span>']
-        ],
-        hall: [
-            ['The dial carries over from the last room. This hall is lined with spikes. Pip knows they are bad (they lower a move\'s score), but a lower score is not a zero chance.',
-                'Run it cold, then warm the dial up a little and watch the <b>decision log</b> under the map.',
-                '<span class="tip">How warm is too warm?</span>']
-        ],
-        garden: [
-            ['Cold Pip always picks its top choice. Here, the top choice is "go straight at the plate", even when a wall is in the way.',
-                'Pip can\'t plan around the wall. It needs a little <b>randomness</b> to wander off the straight path and find the gap.',
-                '<span class="tip">If Pip keeps bonking the wall, raise the temperature.</span>']
-        ],
-        gap: [
-            ['Two problems in one room. Pip must <b>find the gap</b> (needs some randomness) and then <b>cross the spiky floor</b> (needs focus).',
-                'Too cold and Pip is stuck. Too hot and it stumbles onto spikes.',
-                '<span class="tip">You can change the dial at any time, even mid-run. Find the sweet spot.</span>']
-        ],
-        treasure: [
-            ['A quiet room with a chest. Pip tries to follow you, but at higher temperatures it wanders off.',
-                '<span class="tip">Try different temperatures while you walk to the chest.</span>']
-        ]
-    };
+    var STORY = C.STORY;
 
     /* ------------------------------------------------------------------ */
     /* Game state                                                          */
@@ -519,7 +314,7 @@
         // opts: {title, pages: [[html paragraphs]], button, onDone}
         overlayState = { opts: opts, page: 0 };
         S.mode = 'overlay';
-        el.ovTitle.textContent = opts.title;
+        el.ovTitle.textContent = tr(opts.title);
         el.overlay.hidden = false;
         renderOverlayPage();
     }
@@ -529,8 +324,8 @@
         var page = o.pages[overlayState.page];
         el.ovText.innerHTML = page.map(function (p) { return '<p>' + p + '</p>'; }).join('');
         var last = overlayState.page === o.pages.length - 1;
-        el.ovBtn.textContent = last ? o.button : 'Next';
-        el.ovHint.textContent = 'Press Enter or Space';
+        el.ovBtn.textContent = last ? tr(o.button) : tr('Next');
+        el.ovHint.textContent = tr('Press Enter or Space');
         el.ovBtn.focus();
     }
 
@@ -559,27 +354,27 @@
     }
 
     function tempLabel(T) {
-        if (T < 0.05) { return 'greedy'; }
-        if (T < 0.5) { return 'cold'; }
-        if (T < 1.0) { return 'balanced'; }
-        if (T < 1.6) { return 'warm'; }
-        return 'hot';
+        if (T < 0.05) { return tr('greedy'); }
+        if (T < 0.5) { return tr('cold'); }
+        if (T < 1.0) { return tr('balanced'); }
+        if (T < 1.6) { return tr('warm'); }
+        return tr('hot');
     }
 
     function tempNote(T) {
         if (T < 0.05) {
-            return '<strong>T = 0, greedy.</strong> Pip always takes its single highest-scoring move. Same situation, same move, every time. Perfectly repeatable, but it can loop forever.';
+            return tr('<strong>T = 0, greedy.</strong> Pip always takes its single highest-scoring move. Same situation, same move, every time. Perfectly repeatable, but it can loop forever.');
         }
         if (T < 0.5) {
-            return '<strong>Cold.</strong> Pip almost always picks its top choice. Very predictable, a little stubborn.';
+            return tr('<strong>Cold.</strong> Pip almost always picks its top choice. Very predictable, a little stubborn.');
         }
         if (T < 1.0) {
-            return '<strong>Balanced.</strong> Mostly the top choice, but now and then Pip tries something else.';
+            return tr('<strong>Balanced.</strong> Mostly the top choice, but now and then Pip tries something else.');
         }
         if (T < 1.6) {
-            return '<strong>Warm.</strong> Pip\'s second and third choices get a real chance. More exploratory, less reliable.';
+            return tr('<strong>Warm.</strong> Pip\'s second and third choices get a real chance. More exploratory, less reliable.');
         }
-        return '<strong>Hot.</strong> Pip\'s choices are nearly random. Creative? Maybe. Chaos? Definitely.';
+        return tr('<strong>Hot.</strong> Pip\'s choices are nearly random. Creative? Maybe. Chaos? Definitely.');
     }
 
     function setTemp(v) {
@@ -643,7 +438,7 @@
         updateBars();
         var idle;
         if (S.dungeon && S.dungeon.hud === 'basic' && S.room) {
-            idle = '<strong>' + S.room.title + '.</strong> ' + S.room.objective;
+            idle = '<strong>' + S.room.title + '.</strong> ' + S.room.objective; // already translated room text
         } else {
             idle = tempNote(S.T);
         }
@@ -659,113 +454,7 @@
     /* ------------------------------------------------------------------ */
     /* Lessons: feel it -> name it -> use it                               */
     /* ------------------------------------------------------------------ */
-    var LESSONS = {
-        hallucination: [
-            '<b>Name it:</b> <i>hallucination</i>: a model produces fluent, confident text that is false, such as invented facts, citations or numbers. It is a side effect of predicting likely text.',
-            '<b>In the real world:</b> the tone of an answer says nothing about its accuracy. Risk is highest for specific details: citations, quotes, precise figures, your own private data, recent events and niche facts.',
-            '<b>Use it:</b> verify the high-stakes and the specific, ask for sources and open them, and give the model the facts instead of hoping it remembers.'
-        ],
-        grounding: [
-            '<b>Name it:</b> <i>grounding</i>, often done with <i>retrieval-augmented generation</i> (RAG): fetch relevant, current documents when a question arrives and give them to the model to answer from.',
-            '<b>In the real world:</b> prompts set behaviour, retrieval supplies knowledge, and fine-tuning changes the model\'s weights for style or behaviour. Fine-tuning is a poor way to store facts that change. Retrieval quality matters: wrong or outdated documents give wrong answers.',
-            '<b>Use it:</b> try a prompt first, add retrieval for your own or fast-changing knowledge, and fine-tune only for a consistent style or format when the others fall short.'
-        ],
-        injection: [
-            '<b>Name it:</b> <i>prompt injection</i>: untrusted text (an email, a web page, a document) contains instructions, and the model follows them as if they came from you.',
-            '<b>In the real world:</b> models cannot reliably tell data from instructions, so no prompt reliably prevents it. It matters most for agents that have tools and access to private data.',
-            '<b>Use it:</b> assume it can succeed, then shrink the damage: least-privilege tools, human approval for risky actions, allowlists, keeping secrets out of reach, and treating outside text as untrusted.'
-        ],
-        sysprompt: [
-            '<b>Name it:</b> the <i>system prompt</i>: standing instructions a model receives before the conversation. It sets the role, the format, the boundaries and how to handle edge cases.',
-            '<b>In the real world:</b> vague instructions ("be helpful") change little, and contradictory ones ("answer anything") quietly cancel your rules. Specific, checkable instructions give predictable behaviour, and the prompt is billed on every request.',
-            '<b>Use it:</b> state the role, the output format, what not to do and what to do when unsure. Then test it with awkward inputs. A system prompt is guidance, not a security boundary: users can still try to talk past it.'
-        ],
-        context: [
-            '<b>Name it:</b> the <i>context window</i>: the amount of text, measured in tokens, a model can see at once. Anything outside it is simply not known.',
-            '<b>In the real world:</b> this is why a long chat seems to forget how it started. The oldest turns fall out first. Bigger windows help but cost more memory and money, and details can still get lost in the middle.',
-            '<b>Use it:</b> put what must never be forgotten in the system prompt, summarise old turns, and trim what is not needed.'
-        ],
-        tokenunits: [
-            '<b>Name it:</b> the <i>token</i>: the chunk of text a model actually reads and writes, and the unit you are billed in. For English, about four characters or three quarters of a word.',
-            '<b>In the real world:</b> both your prompt and the reply are charged, the system prompt included on every request. And because models read tokens rather than letters, they are surprisingly bad at tasks like counting letters in a word.',
-            '<b>Use it:</b> cut fluff from prompts that run at scale, and do not trust a model with letter-level tricks without a tool.'
-        ],
-        speed: [
-            '<b>Name it:</b> <i>tokens per second</i> is how fast text streams out. <i>Time to first token</i> is the wait before it starts, mostly the time spent reading your prompt.',
-            '<b>In the real world:</b> generating tokens is mostly limited by how fast the model\'s weights can be read from memory. So bigger models and higher precision run slower, and quantization often makes a model faster as well as smaller.',
-            '<b>Use it:</b> match speed to the job. A chat feels fine at reading speed, a voice assistant needs a fast first token, and an overnight batch only cares about total throughput.'
-        ],
-        cache: [
-            '<b>Name it:</b> <i>caching</i>. The <i>KV cache</i> stores the model\'s work on earlier tokens so it does not redo it for every new one. <i>Prompt caching</i> reuses that work across requests when the start of the prompt is identical.',
-            '<b>In the real world:</b> the KV cache grows with context length, which is why a bigger context window needs more memory. Providers discount cached tokens heavily and answer faster.',
-            '<b>Use it:</b> put stable content (instructions, tools, documents) first and changing content (the question, a timestamp) last.'
-        ],
-        guardrails: [
-            '<b>Name it:</b> <i>alignment</i> and <i>guardrails</i>. Alignment is training a model to refuse harmful requests. Guardrails are the other layers: system prompts, input and output filters, and permissions.',
-            '<b>In the real world:</b> an uncensored model has the training-level refusals reduced or removed. It is not smarter. Normal models sometimes <i>over-refuse</i> harmless work, while uncensored ones have no safety net at all.',
-            '<b>Use it:</b> decide by audience and worst case. If you remove a model\'s own refusals, you must add the protection somewhere else, such as isolation, filtering or human review. Jailbreaks are attempts to get around these layers.'
-        ],
-        kinds: [
-            '<b>Name it:</b> <i>model kinds</i>. Classifiers choose a label, predictors output a number, generators create new content, recommenders rank options, and agents act using tools.',
-            '<b>In the real world:</b> most products combine several. A classifier flags abuse, a recommender orders a feed, and a generator writes replies.',
-            '<b>Use it:</b> before reaching for a big chatbot, ask what the output actually is: a label, a number, new content, a ranking, or an action. The answer points to the right kind of model.'
-        ],
-        tokens: [
-            '<b>Name it:</b> <i>next-token prediction</i>. A language model repeatedly picks the next piece of text (a token) from a probability distribution.',
-            '<b>In the real world:</b> this is why chatbots sound fluent, and why they sometimes state false things confidently. Likely text is not verified fact. That failure is called <i>hallucination</i>.',
-            '<b>Use it:</b> treat model output as a draft to check. For facts that matter, give the model a source, or a tool to look things up.'
-        ],
-        agent: [
-            '<b>Name it:</b> an <i>agent</i> (and its <i>harness</i>): a model plus tools, run in a loop. The harness decides which tools the model may use and what happens with the results.',
-            '<b>In the real world:</b> coding assistants, research bots and support agents work this way. The same model with a better harness can do far more.',
-            '<b>Use it:</b> give a model only the tools a task needs. Every extra tool adds cost and a way for an attacker to misuse it, for example through prompt injection.'
-        ],
-        quant: [
-            '<b>Name it:</b> <i>quantization</i>. A model is stored as billions of numbers. Quantization stores them with fewer bits, so the model takes far less memory at a small cost in quality.',
-            '<b>In the real world:</b> it is why a large model can run on a laptop GPU. Local tools such as Ollama commonly ship quantized versions.',
-            '<b>Use it:</b> when memory is the limit, a bigger quantized model usually beats a smaller full-precision one.'
-        ],
-        privacy: [
-            '<b>Name it:</b> <i>data locality</i>. With a cloud model your prompts travel to someone else\'s servers. With a local model they never leave your machine.',
-            '<b>In the real world:</b> confidential code, health records and anything under regulation or an NDA are strong reasons to run locally or use a private deployment.',
-            '<b>Use it:</b> decide by the data, not by habit. Public, low-risk work suits the cloud. Sensitive work suits local.'
-        ],
-        cost: [
-            '<b>Name it:</b> <i>break-even</i>. Cloud is pay-per-use. Local is mostly a fixed cost. Below some volume the cloud is cheaper, above it local wins.',
-            '<b>In the real world:</b> real prices change, and local has hidden costs: setup time, maintenance, and hardware that can sit idle.',
-            '<b>Use it:</b> estimate your volume first. A few requests a day rarely justify hardware. Millions might.'
-        ],
-        rules: [
-            '<b>Name it:</b> a <i>rule-based system</i> (sometimes called symbolic AI). A person writes the logic, and the software follows it exactly.',
-            '<b>In the real world:</b> tax software, thermostats and early spam filters work this way. They are predictable and easy to explain, but they only handle cases someone thought of.',
-            '<b>Use it:</b> your rules covered the pattern because it was simple enough to spot in a few examples. Next, the pattern gets fuzzier.'
-        ],
-        learning: [
-            '<b>Name it:</b> <i>machine learning</i>. Instead of rules, the software has <i>weights</i> that are fitted to labelled examples. That fitting step is called <i>training</i>.',
-            '<b>In the real world:</b> spam filters, photo recognition and recommendations learn this way. The system finds patterns nobody wrote down, and the weights show which inputs mattered.',
-            '<b>Use it:</b> the learner was scored on creatures it had never seen. That held-out test is how you check a model <i>generalises</i> instead of memorising. Hand-tuned rules fit the known cases and broke on new ones.'
-        ],
-        vault: [
-            '<b>Name it:</b> <i>choosing the right tool</i>. Use <b>rules</b> when the logic is exact and you can write it down. Use <b>learning</b> when the pattern is fuzzy and you have plenty of examples.',
-            '<b>In the real world:</b> most real products mix both. Rules enforce hard limits (like tax or safety checks) and learned models handle the fuzzy parts (like spotting spam or a cat).'
-        ],
-        stuck: [
-            '<b>Name it:</b> <i>greedy decoding</i>. At temperature 0 a model always takes its single most likely next token, so the same situation gives the same output every time.',
-            '<b>In the real world:</b> this is why a model run at a very low temperature can fall into loops and repeat the same phrase. It is also why code and fact lookups often use low settings: you want consistency, not variety.',
-            '<b>Use it:</b> Pip can\'t plan around the wall. It can only re-pick its top move. A little randomness lets it wander off that path.'
-        ],
-        contrast: [
-            '<b>Name it:</b> <i>temperature</i>. It rescales the odds of every possible next move (for a real model, every possible next token). Low values sharpen the odds toward the top pick. High values flatten them.',
-            '<b>In the real world:</b> at low temperature the same prompt gives nearly the same answer every time. At high temperature it can give a different answer on each run: more variety, less reliability.',
-            '<b>Use it:</b> your footprints show it. Cold Pip took the same short path. Hot Pip took a longer one that changes every time. Next up: what happens when that wandering has a price.'
-        ],
-        sampling: [
-            '<b>Name it:</b> <i>sampling</i>. A model doesn\'t just pick the best token. It draws from a probability distribution, and temperature sharpens or flattens that distribution.',
-            '<b>In the real world:</b> at higher temperature, lower-probability tokens get picked more often. That is where variety and creativity come from, and also the occasional nonsense answer. The same prompt can give a different reply each time.',
-            '<b>Use it:</b> check the decision log. The spike move had a small but real chance. A cooler dial shrinks that chance.',
-            '<b>But it is not just a risk:</b> the same randomness that hurt Pip here is what lets it find the gap in the Garden. Temperature is a trade-off between reliability and exploration, not a good-or-bad setting.'
-        ]
-    };
+    var LESSONS = C.LESSONS;
 
     function lessonPages(key) { return [LESSONS[key]]; }
 
@@ -774,7 +463,7 @@
         if (S.lessons[key]) { return false; }
         S.lessons[key] = true;
         collectCard(key);
-        showOverlay({ title: 'What you just learned', pages: lessonPages(key), button: 'Got it' });
+        showOverlay({ title: 'What you just learned', pages: lessonPages(key), button: 'Got it' }); // showOverlay translates title/button
         return true;
     }
 
@@ -792,14 +481,14 @@
         }
         var outcome = '';
         var cls = rank === 1 ? 'top' : 'alt';
-        if (res.hitSpike) { outcome = 'stepped on spikes (-1 HP)'; cls = 'bad'; }
-        else if (res.bumped) { outcome = 'bonked into a wall'; cls = 'bad'; }
-        else if (res.onPlate) { outcome = 'reached the plate'; cls = 'top'; }
+        if (res.hitSpike) { outcome = tr('stepped on spikes (-1 HP)'); cls = 'bad'; }
+        else if (res.bumped) { outcome = tr('bonked into a wall'); cls = 'bad'; }
+        else if (res.onPlate) { outcome = tr('reached the plate'); cls = 'top'; }
         S.log.push({
             n: S.roomSteps,
             arrow: L.DIRS[res.dir].arrow,
             pct: p < 0.005 ? '<1%' : Math.round(p * 100) + '%',
-            rank: ORDINAL[rank - 1],
+            rank: tr(ORDINAL[rank - 1]),
             outcome: outcome,
             cls: cls
         });
@@ -812,7 +501,7 @@
         if (!S.log.length) {
             var empty = document.createElement('li');
             empty.className = 'empty';
-            empty.textContent = 'Pip hasn\'t moved yet.';
+            empty.textContent = tr('Pip hasn\'t moved yet.');
             el.log.appendChild(empty);
             return;
         }
@@ -820,7 +509,7 @@
             var e = S.log[i];
             var li = document.createElement('li');
             li.className = e.cls;
-            var text = '#' + e.n + '  ' + e.arrow + '  chose at ' + e.pct + ' (' + e.rank + ' choice)';
+            var text = tr('#{n}  {arrow}  chose at {pct} ({rank} choice)', { n: e.n, arrow: e.arrow, pct: e.pct, rank: e.rank });
             if (e.outcome) { text += ' → ' + e.outcome; }
             li.textContent = text;
             el.log.appendChild(li);
@@ -836,8 +525,10 @@
     function trialText() {
         var c = S.trial.cold;
         var h = S.trial.hot;
-        return 'Cold run (T ≤ ' + COLD_MAX.toFixed(1) + '): ' + (c !== null ? '✓ ' + c + ' steps' : 'not yet') +
-            '  |  Hot run (T ≥ ' + HOT_MIN.toFixed(1) + '): ' + (h !== null ? '✓ ' + h + ' steps' : 'not yet');
+        return tr('Cold run (T ≤ {max}): {cold}  |  Hot run (T ≥ {min}): {hot}', {
+            max: COLD_MAX.toFixed(1), cold: c !== null ? tr('✓ {n} steps', { n: c }) : tr('not yet'),
+            min: HOT_MIN.toFixed(1), hot: h !== null ? tr('✓ {n} steps', { n: h }) : tr('not yet')
+        });
     }
 
     function resetPipRun() {
@@ -857,7 +548,7 @@
         var avg = S.runTSum / Math.max(1, steps);
         var kind = avg <= COLD_MAX ? 'cold' : (avg >= HOT_MIN ? 'hot' : null);
         if (!kind) {
-            setNote('<strong>That run averaged T = ' + avg.toFixed(1) + '.</strong> For the experiment, run Pip cold (' + COLD_MAX.toFixed(1) + ' or less) or hot (' + HOT_MIN.toFixed(1) + ' or more). Pip is heading back to the start.', '', 8000);
+            setNote(tr('<strong>That run averaged T = {avg}.</strong> For the experiment, run Pip cold ({cold} or less) or hot ({hot} or more). Pip is heading back to the start.', { avg: avg.toFixed(1), cold: COLD_MAX.toFixed(1), hot: HOT_MIN.toFixed(1) }), '', 8000);
             S.pipWait = 1800;
             return;
         }
@@ -865,11 +556,13 @@
         if (S.trial.cold !== null && S.trial.hot !== null) {
             S.pip.doorOpen = true;
             S.pip.done = true;
-            setNote('<strong>Experiment complete.</strong> Cold run: ' + S.trial.cold + ' steps. Hot run: ' + S.trial.hot + ' steps. The door is open, Hero, go!', 'good', 10000);
+            setNote(tr('<strong>Experiment complete.</strong> Cold run: {cold} steps. Hot run: {hot} steps. The door is open, Hero, go!', { cold: S.trial.cold, hot: S.trial.hot }), 'good', 10000);
             maybeShowLesson('contrast');
         } else {
             var wasCold = kind === 'cold';
-            setNote('<strong>' + (wasCold ? 'Cold' : 'Hot') + ' run done in ' + steps + ' steps.</strong> Now turn the dial ' + (wasCold ? 'up to ' + HOT_MIN.toFixed(1) + ' or more' : 'down to ' + COLD_MAX.toFixed(1) + ' or less') + ' and send Pip across again.', 'good', 10000);
+            setNote(wasCold
+                ? tr('<strong>Cold run done in {steps} steps.</strong> Now turn the dial up to {n} or more and send Pip across again.', { steps: steps, n: HOT_MIN.toFixed(1) })
+                : tr('<strong>Hot run done in {steps} steps.</strong> Now turn the dial down to {n} or less and send Pip across again.', { steps: steps, n: COLD_MAX.toFixed(1) }), 'good', 10000);
             S.pipWait = 1800;
         }
     }
@@ -913,7 +606,7 @@
         S.pipWait = 0;
         renderLog();
         el.objective.textContent = S.room.objective;
-        el.floorLabel.textContent = S.dungeon.title + ' · ' + S.dungeon.unit + ' ' + (index + 1) + '/' + rooms.length + ' · ' + S.room.title;
+        el.floorLabel.textContent = S.dungeon.title + ' · ' + S.dungeon.unit + ' ' + (index + 1) + '/' + rooms.length + ' · ' + S.room.title; // all already translated
         S.noteUntil = 0;
         if (skipIntro) {
             S.mode = 'play';
@@ -927,8 +620,8 @@
         S.faints++;
         var hot = S.T >= 1.0;
         var msg = hot
-            ? 'At temperature ' + S.T.toFixed(1) + ' Pip\'s choices are unpredictable, and this time that meant too many spike steps. Check the decision log, then try a cooler setting.'
-            : 'Pip fainted at temperature ' + S.T.toFixed(1) + '. Check the decision log and the move odds, then try a different setting.';
+            ? tr('At temperature {t} Pip\'s choices are unpredictable, and this time that meant too many spike steps. Check the decision log, then try a cooler setting.', { t: S.T.toFixed(1) })
+            : tr('Pip fainted at temperature {t}. Check the decision log and the move odds, then try a different setting.', { t: S.T.toFixed(1) });
         var pages = [[msg]];
         if (!S.lessons.sampling) {
             S.lessons.sampling = true;
@@ -950,7 +643,7 @@
         saveProgress();
         var pages = story.clear.map(function (p) { return p.slice(); });
         if (d.hud === 'forge') {
-            pages[pages.length - 1].push('Pip fainted <b>' + S.faints + '</b> time' + (S.faints === 1 ? '' : 's') + ' and took <b>' + S.steps + '</b> steps.');
+            pages[pages.length - 1].push(tr('Times Pip fainted: <b>{faints}</b>. Steps Pip took: <b>{steps}</b>.', { faints: S.faints, steps: S.steps }));
         }
         showOverlay({
             title: story.clearTitle,
@@ -974,7 +667,7 @@
 
     function openPuzzle() {
         if (S.puzzleSolved) {
-            setNote('<strong>The golem stands calm.</strong> The door is open.', 'good', 3000);
+            setNote(tr('<strong>The golem stands calm.</strong> The door is open.'), 'good', 3000);
             return;
         }
         S.mode = 'puzzle';
@@ -993,7 +686,7 @@
         closePuzzle();
         S.puzzleSolved = true;
         S.pip.doorOpen = true;
-        setNote('<strong>The golem steps aside.</strong> The door is open. Hero, go!', 'good', 8000);
+        setNote(tr('<strong>The golem steps aside.</strong> The door is open. Hero, go!'), 'good', 8000);
         maybeShowLesson(PUZZLE_LESSON[S.room.puzzle]);
     }
 
@@ -1010,12 +703,12 @@
         var ny = S.hero.y + dy;
         var t = L.tileAt(S.room, nx, ny);
         if (t === '#') { return; }
-        if (t === 'S') { setNote('<strong>Hero:</strong> I\'m not stepping on those spikes.', '', 2500); return; }
+        if (t === 'S') { setNote(tr('<strong>Hero:</strong> I\'m not stepping on those spikes.'), '', 2500); return; }
         if (t === 'A') { openPuzzle(); return; }
         if (t === 'D' && !S.pip.doorOpen) {
             setNote(S.room.puzzle
-                ? '<strong>The door is sealed.</strong> Challenge the golem.'
-                : '<strong>The door is sealed.</strong> Get Pip onto the glowing plate.', '', 3500);
+                ? tr('<strong>The door is sealed.</strong> Challenge the golem.')
+                : tr('<strong>The door is sealed.</strong> Get Pip onto the glowing plate.'), '', 3500);
             return;
         }
         if (t === 'K') { clearDungeon(); return; }
@@ -1045,7 +738,7 @@
             S.bumpStreak++;
             if (S.bumpStreak >= 6 && !S.stuckHinted && S.T < 1.0 && !S.room.followHero) {
                 S.stuckHinted = true;
-                setNote('<strong>Pip keeps bonking the wall.</strong> At low temperature it picks the same top move every time, so it repeats forever. Raise the temperature to let it explore.', 'bad', 9000);
+                setNote(tr('<strong>Pip keeps bonking the wall.</strong> At low temperature it picks the same top move every time, so it repeats forever. Raise the temperature to let it explore.'), 'bad', 9000);
                 lesson = 'stuck';
             }
         } else {
@@ -1053,7 +746,7 @@
         }
         if (res.hitSpike) {
             S.hurtT = 320;
-            setNote('<strong>Ouch!</strong> Pip sampled a low-probability move and stepped on spikes. At higher temperature, unlikely moves happen more often.', 'bad', 6000);
+            setNote(tr('<strong>Ouch!</strong> Pip sampled a low-probability move and stepped on spikes. At higher temperature, unlikely moves happen more often.'), 'bad', 6000);
             if (S.pip.hp <= 0) { faint(); return; }
             lesson = 'sampling';
         }
@@ -1063,7 +756,7 @@
             } else {
                 S.pip.doorOpen = true;
                 S.pip.done = true;
-                setNote('<strong>Click!</strong> Pip is on the plate and the door is open. Hero, go!', 'good', 6000);
+                setNote(tr('<strong>Click!</strong> Pip is on the plate and the door is open. Hero, go!'), 'good', 6000);
             }
         }
         if (lesson) { maybeShowLesson(lesson); }
@@ -1244,29 +937,7 @@
     /* Grimoire: every lesson collected as a card you can revisit          */
     /* ------------------------------------------------------------------ */
     // Order here is the order shown. `dungeon` ties a card to the dungeon that teaches it.
-    var CARD_META = {
-        rules:      { dungeon: 'ai',     title: 'Rule-based systems',        where: 'The Rule Golem',       line: 'Rules are exact and explainable, but only cover the cases someone thought of.' },
-        learning:   { dungeon: 'ai',     title: 'Machine learning',          where: 'The Learner Golem',    line: 'Learning finds patterns from examples. Always test it on data it has not seen.' },
-        vault:      { dungeon: 'ai',     title: 'Choosing the right tool',   where: 'The Vault of Choices', line: 'Rules for exact logic, learning for fuzzy patterns, and often both together.' },
-        kinds:      { dungeon: 'models', title: 'Kinds of models',           where: 'The Sorting Gate',     line: 'Ask what the output is (label, number, new content, ranking, action) to pick the kind.' },
-        tokens:     { dungeon: 'models', title: 'Next-token prediction',     where: 'The Token Mill',       line: 'Models pick likely next tokens, so fluent does not mean true. Check what matters.' },
-        agent:      { dungeon: 'models', title: 'Agents and harnesses',      where: 'The Agent\'s Workshop', line: 'An agent is a model plus tools in a loop. Give it only the tools the task needs.' },
-        quant:      { dungeon: 'local',  title: 'Quantization',              where: 'The Packing Room',     line: 'It shrinks a model to fit memory. A bigger quantized model usually beats a smaller full-precision one.' },
-        privacy:    { dungeon: 'local',  title: 'Data locality',             where: 'The Data Gate',        line: 'Choose local or cloud by how sensitive the data is, not by habit.' },
-        cost:       { dungeon: 'local',  title: 'Break-even',                where: 'The Toll Booth',       line: 'Cloud is pay-per-use and local is a fixed cost. Estimate your volume to find the crossover.' },
-        sysprompt:  { dungeon: 'talk',   title: 'The system prompt',         where: 'The Prompt Forge',     line: 'State a role, a format, boundaries and what to do when unsure. It guides, but it is not a lock.' },
-        context:    { dungeon: 'talk',   title: 'The context window',        where: 'The Memory Hall',      line: 'A model only sees what fits. Pin what matters, summarise, and trim the rest.' },
-        tokenunits: { dungeon: 'talk',   title: 'Tokens as units',           where: 'The Token Counter',    line: 'You pay in tokens, and models read tokens, not letters. Cut fluff at scale.' },
-        hallucination: { dungeon: 'trust', title: 'Hallucination',       where: 'The Liar\'s Ledger',  line: 'A confident tone is not evidence. Verify the specific, the private and the high-stakes.' },
-        grounding:  { dungeon: 'trust',  title: 'Grounding and RAG',         where: 'The Three Doors',      line: 'Hand the model the right, current source. Prompt first, retrieval for changing facts, fine-tune last.' },
-        injection:  { dungeon: 'trust',  title: 'Prompt injection',          where: 'The Poisoned Inbox',   line: 'Assume it can succeed. Limit what a tricked model is able to do.' },
-        speed:      { dungeon: 'hood',   title: 'Tokens per second',         where: 'The Speed Run',        line: 'Match speed to the job: wait for the first token, streaming rate, or total throughput.' },
-        cache:      { dungeon: 'hood',   title: 'Caching',                   where: 'The Cache Vault',      line: 'Put stable content first in a prompt so the cache can reuse it.' },
-        guardrails: { dungeon: 'hood',   title: 'Alignment and guardrails',  where: 'The Guardrail Gate',   line: 'Uncensored removes a model\'s refusals, not the risk. Add protection somewhere else.' },
-        contrast:   { dungeon: 'forge',  title: 'Temperature',               where: 'The Wander Test',      line: 'Low is repeatable, high is varied. Choose by the task.' },
-        sampling:   { dungeon: 'forge',  title: 'Sampling',                  where: 'The Hall of Repeats',  line: 'Models sample from odds, so unlikely outcomes sometimes happen at higher temperature.' },
-        stuck:      { dungeon: 'forge',  title: 'Greedy decoding',           where: 'The Garden of Wonders', line: 'At temperature 0 a model can loop. A little randomness lets it explore.' }
-    };
+    var CARD_META = C.CARD_META;
 
     // A card is collected when its lesson was shown, or when its whole dungeon was already cleared
     // (so progress saved before the grimoire existed still counts).
@@ -1295,7 +966,7 @@
     function renderGrimoire() {
         el.grimList.textContent = '';
         var t = grimoireTotals();
-        el.grimIntro.textContent = 'You have collected ' + t.got + ' of ' + t.total + ' cards. Each one is an idea from a dungeon. Open a card to read it again. Locked cards show where to find them.';
+        el.grimIntro.textContent = tr('You have collected {got} of {total} cards. Each one is an idea from a dungeon. Open a card to read it again. Locked cards show where to find them.', { got: t.got, total: t.total });
         L.DUNGEONS.forEach(function (d) {
             var keys = Object.keys(CARD_META).filter(function (k) { return CARD_META[k].dungeon === d.id; });
             if (!keys.length) { return; }
@@ -1321,7 +992,7 @@
                 } else {
                     var locked = mk('div', 'gcard locked');
                     locked.appendChild(mk('span', 'g-title', '???'));
-                    locked.appendChild(mk('span', 'g-where', 'Found in ' + d.title + ' › ' + m.where));
+                    locked.appendChild(mk('span', 'g-where', tr('Found in {dungeon} › {where}', { dungeon: d.title, where: m.where })));
                     grid.appendChild(locked);
                 }
             });
@@ -1334,7 +1005,7 @@
         el.grimoire.hidden = false;
         el.toHub.hidden = false;
         el.backLink.hidden = true;
-        el.floorLabel.textContent = 'Grimoire';
+        el.floorLabel.textContent = tr('Grimoire');
         renderGrimoire();
         if (window.scrollTo) { window.scrollTo(0, 0); }
     }
@@ -1354,21 +1025,21 @@
     }
 
     function dungeonStatus(d) {
-        if (!d.ready) { return { state: 'soon', text: 'Coming soon' }; }
+        if (!d.ready) { return { state: 'soon', text: tr('Coming soon') }; }
         var done = !!S.progress.cleared[d.id];
         var missing = (d.requires || []).filter(function (id) { return !S.progress.cleared[id]; });
         if (missing.length && !done) {
             var text;
             if (d.requires.length > 1) {
-                text = '\uD83D\uDD12 Clear all of The Basics first';
+                text = '\uD83D\uDD12 ' + tr('Clear all of The Basics first');
             } else {
                 var pre = dungeonById(missing[0]);
-                text = '\uD83D\uDD12 Clear "' + (pre ? pre.title : missing[0]) + '" first';
+                text = '\uD83D\uDD12 ' + tr('Clear "{title}" first', { title: pre ? pre.title : missing[0] });
             }
             return { state: 'locked', text: text };
         }
-        if (done) { return { state: 'cleared', text: '\u2605 Cleared!' }; }
-        return { state: 'ready', text: '\u25B6 Play' };
+        if (done) { return { state: 'cleared', text: '\u2605 ' + tr('Cleared!') }; }
+        return { state: 'ready', text: '\u25B6 ' + tr('Play') };
     }
 
     function makeThumb(d) {
@@ -1416,7 +1087,7 @@
         GROUPS.forEach(function (grp) {
             var list = L.DUNGEONS.filter(function (d) { return d.group === grp.id; });
             if (!list.length) { return; }
-            el.hubGroups.appendChild(mk('h2', 'group-title', grp.title));
+            el.hubGroups.appendChild(mk('h2', 'group-title', tr(grp.title)));
             var cards = mk('div', 'cards');
             list.forEach(function (d) {
                 var st = dungeonStatus(d);
@@ -1425,7 +1096,7 @@
                 btn.disabled = st.state === 'locked' || st.state === 'soon';
                 btn.dataset.dungeon = d.id;
                 var title = mk('h3', '', d.title);
-                title.appendChild(mk('span', 'badge ' + d.difficulty, BADGE_TEXT[d.difficulty]));
+                title.appendChild(mk('span', 'badge ' + d.difficulty, tr(BADGE_TEXT[d.difficulty])));
                 btn.appendChild(makeThumb(d));
                 btn.appendChild(title);
                 btn.appendChild(mk('p', 'blurb', d.blurb));
@@ -1445,7 +1116,7 @@
         el.keysDial.hidden = !forge;
         el.hp.hidden = !forge;
         el.hud.className = forge ? 'hud' : 'hud solo';
-        el.pipTitle.textContent = forge ? 'Pip' : 'Objective';
+        el.pipTitle.textContent = forge ? tr('Pip') : tr('Objective');
     }
 
     function showHub() {
@@ -1462,7 +1133,7 @@
         el.game.hidden = true;
         el.toHub.hidden = true;
         el.backLink.hidden = false;
-        el.floorLabel.textContent = 'Choose a dungeon';
+        el.floorLabel.textContent = tr('Choose a dungeon');
         renderHub();
         updateGrimCount();
         if (window.scrollTo) { window.scrollTo(0, 0); }
@@ -1501,6 +1172,19 @@
     /* Boot                                                                */
     /* ------------------------------------------------------------------ */
     S.progress = loadProgress();
+    if (window.I18n) {
+        window.I18n.dom(document);                        // translate the static page text
+        if (document.documentElement) { document.documentElement.lang = window.I18n.lang === 'bm' ? 'ms' : 'en'; }
+    }
+    var curLang = window.I18n ? window.I18n.lang : 'en';
+    [[el.langEn, 'en'], [el.langBm, 'bm']].forEach(function (pair) {
+        var btn = pair[0];
+        btn.setAttribute('aria-pressed', curLang === pair[1] ? 'true' : 'false');
+        btn.className = 'lang-btn' + (curLang === pair[1] ? ' on' : '');
+        btn.addEventListener('click', function () {
+            if (curLang !== pair[1] && window.I18n) { window.I18n.setLang(pair[1]); } // saves the choice and reloads
+        });
+    });
     buildBars();
     setTemp(0.0);
     showHub();

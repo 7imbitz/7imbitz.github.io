@@ -18,6 +18,7 @@
         { key: 'scars', label: 'Scars' },
         { key: 'fangs', label: 'Fangs' }
     ];
+    var tr = (root.I18n && root.I18n.t) || function (k) { return k; }; // i18n lookup (local names like t are used elsewhere)
     var N = MARKS.length;
     var ALL = 1 << N; // 64 possible creatures
 
@@ -223,7 +224,7 @@
         {
             start: 'The capital of France is',
             steps: [
-                [{ t: ' Paris', p: 90 }, { t: ' a', p: 4 }, { t: ' the', p: 3 }, { t: ' Lyon', p: 2 }, { t: ' Berlin', p: 1 }],
+                [{ t: ' Paris', p: 90 }, { t: ' also', p: 4 }, { t: ' the', p: 3 }, { t: ' Lyon', p: 2 }, { t: ' Berlin', p: 1 }],
                 [{ t: '.', p: 84 }, { t: ',', p: 9 }, { t: ' and', p: 5 }, { t: ' known', p: 2 }]
             ],
             note: 'A famous fact, so one token dominates. The model is confident, and here it happens to be right.'
@@ -231,7 +232,7 @@
         {
             start: 'The capital of Australia is',
             steps: [
-                [{ t: ' Sydney', p: 46, wrong: true }, { t: ' Canberra', p: 41 }, { t: ' Melbourne', p: 9 }, { t: ' a', p: 4 }],
+                [{ t: ' Sydney', p: 46, wrong: true }, { t: ' Canberra', p: 41 }, { t: ' Melbourne', p: 9 }, { t: ' also', p: 4 }],
                 [{ t: '.', p: 80 }, { t: ',', p: 12 }, { t: ' and', p: 6 }, { t: ' where', p: 2 }]
             ],
             note: 'The most likely token is not the true one. The model fluently continues with what sounds right. Real models are better at famous facts, but they fail the same way on rarer ones.'
@@ -523,8 +524,8 @@
             forgotten: forgotten, dropped: dropped,
             answerSafe: keyKept && !overflow,
             answer: (keyKept && !overflow)
-                ? 'No. Satay usually comes with peanut sauce, and you told me you are allergic to peanuts. Please avoid it.'
-                : (overflow ? '(The pinned notes alone do not fit in the window, so nothing can be answered.)' : 'Yes, the satay is delicious! Enjoy.')
+                ? tr('No. Satay usually comes with peanut sauce, and you told me you are allergic to peanuts. Please avoid it.')
+                : (overflow ? tr('(The pinned notes alone do not fit in the window, so nothing can be answered.)') : tr('Yes, the satay is delicious! Enjoy.'))
         };
     }
 
@@ -561,10 +562,14 @@
         { text: 'Report: Sales rose 8% in Q3, driven by the new mobile app; costs were flat.', essential: true },
         { text: 'By the way, I love how helpful AI assistants are these days.', essential: false }
     ];
+    // Token counts are fixed from the ENGLISH text, so the puzzle plays the same in every language
+    // (a translated sentence is longer or shorter, but the puzzle's numbers must not change).
+    TRIM_SENTENCES.forEach(function (s) { s.tokens = estimateTokens(s.text); });
+
     // kept: array of sentence indexes still in the prompt
     function trimResult(kept) {
         var tokens = 0;
-        TRIM_SENTENCES.forEach(function (s, i) { if (kept.indexOf(i) >= 0) { tokens += estimateTokens(s.text); } });
+        TRIM_SENTENCES.forEach(function (s, i) { if (kept.indexOf(i) >= 0) { tokens += s.tokens; } });
         var cutEssential = TRIM_SENTENCES.filter(function (s, i) { return s.essential && kept.indexOf(i) < 0; }).length;
         var millionCost = tokens * 1000000 * TOKEN_PRICE_PER_MILLION / 1000000; // tokens x 1M requests x $/token
         return { tokens: tokens, cutEssential: cutEssential, ok: cutEssential === 0 && tokens <= TRIM_BUDGET, millionRequestCost: millionCost };
@@ -767,6 +772,7 @@
         QUIZ_PASS: 5
     };
 
+    if (root.I18n) { root.I18n.deep(api); } // translate puzzle content in place
     if (typeof module !== 'undefined' && module.exports) { module.exports = api; }
     root.Puzzles = api;
 })(typeof window !== 'undefined' ? window : globalThis);
