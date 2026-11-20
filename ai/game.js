@@ -135,7 +135,9 @@
         team: '#4cc9f0', files: '#b18cff', memfile: '#ff9f43',
         attacks: '#ef476f', layers: '#06d6a0', modified: '#ffd166',
         hardware: '#4cc9f0', engine: '#ff9f43', bandwidth: '#06d6a0',
-        inputs: '#4cc9f0', pixels: '#ff9f43', visionfit: '#06d6a0'
+        inputs: '#4cc9f0', pixels: '#ff9f43', visionfit: '#06d6a0',
+        compaction: '#b18cff', compnote: '#ffd166', markov: '#4cc9f0',
+        membound: '#ef476f', drafting: '#06d6a0'
     };
     Object.keys(GOLEM_RUNE).forEach(function (k) { sprite['golem_' + k] = makeSprite(SPRITES.golem, { r: GOLEM_RUNE[k] }); });
 
@@ -153,7 +155,8 @@
         rust:    { floorA: '#3b2a22', floorB: '#35251e', speck: '#4a352b', wall: '#8a4b2a', wallDark: '#693a20', wallLight: '#a8643c' },
         plum:    { floorA: '#3a2433', floorB: '#34202d', speck: '#4a2f42', wall: '#7a3f64', wallDark: '#5c2f4c', wallLight: '#93517a' },
         moss:    { floorA: '#22362d', floorB: '#1e3028', speck: '#2b4639', wall: '#3f7a5c', wallDark: '#2e5c45', wallLight: '#54976f' },
-        steel:   { floorA: '#262d3d', floorB: '#222938', speck: '#303a4f', wall: '#4a5a7a', wallDark: '#364360', wallLight: '#62759b' }
+        steel:   { floorA: '#262d3d', floorB: '#222938', speck: '#303a4f', wall: '#4a5a7a', wallDark: '#364360', wallLight: '#62759b' },
+        dusk:    { floorA: '#2a2840', floorB: '#26233b', speck: '#38355a', wall: '#5d56a0', wallDark: '#463f7c', wallLight: '#7a73c0' }
     };
     var theme = THEMES.default;
 
@@ -1011,7 +1014,9 @@
         team: 'teams', files: 'agentfiles', memfile: 'agentmemory',
         attacks: 'jailbreaks', layers: 'layers', modified: 'modifiedmodels',
         hardware: 'gpus', engine: 'engines', bandwidth: 'bandwidth',
-        inputs: 'multimodal', pixels: 'mediatokens', visionfit: 'visionvram'
+        inputs: 'multimodal', pixels: 'mediatokens', visionfit: 'visionvram',
+        compaction: 'compaction', compnote: 'compnote', markov: 'markovchain',
+        membound: 'membound', drafting: 'drafting'
     };
 
     function openPuzzle() {

@@ -1805,6 +1805,156 @@
 
 
     /* ---------------------------------------------------------------- */
+    /* Long Conversations                                                */
+    /* ---------------------------------------------------------------- */
+    function buildCompaction(host, cb) {
+        var C = P.COMPACT;
+        var wrap = panelFrame('The Compaction Dial',
+            tr('A chat has a window of {w} tokens and it keeps growing for {t} turns. When it reaches the <b>compact line</b>, older turns are squeezed into a short note and only the last few are kept word for word (the <b>retained tokens</b>). Set the line and the amount kept so the chat never runs out of room, never compacts more than {m} times, and still keeps at least {e} recent turns exactly.', { w: C.window, t: C.turns, m: C.maxCompactions, e: C.minExactTurns }), cb);
+        var sel = { pct: null, keep: null };
+        var board = h('div', { class: 'bw-board' });
+        var results = h('div', { class: 'puz-result', 'aria-live': 'polite' });
+
+        function group(label, key, values, fmt) {
+            var box = h('div', { class: 'q' }, [h('p', { class: 'q-text', text: label })]);
+            var btns = h('div', { class: 'q-btns' });
+            values.forEach(function (v) {
+                var on = sel[key] === v;
+                var b = h('button', { class: 'ghost tool' + (on ? ' on' : ''), type: 'button', 'aria-pressed': on ? 'true' : 'false', raw: fmt(v) });
+                b.addEventListener('click', function () { sel[key] = v; clear(results); render(); });
+                btns.appendChild(b);
+            });
+            box.appendChild(btns);
+            return box;
+        }
+
+        function render() {
+            clear(board);
+            board.appendChild(group('Compact when the window is this full', 'pct', P.COMPACT_PCT, function (v) { return v + '%'; }));
+            board.appendChild(group('Keep this many recent tokens word for word', 'keep', P.COMPACT_KEEP, function (v) { return v + ' tokens'; }));
+        }
+
+        function run() {
+            clear(results);
+            if (sel.pct === null || sel.keep === null) {
+                results.appendChild(h('p', { class: 'q-why wrong', text: 'Set both dials first.' }));
+                return;
+            }
+            var r = P.compactSim({ pct: sel.pct, keep: sel.keep });
+            results.appendChild(h('p', { class: 'q-why ' + (r.okRoom ? 'ok' : 'wrong'), raw: (r.okRoom ? '✓ ' : '✗ ') + tr('The window overflowed {n} times.', { n: r.overflows }) }));
+            results.appendChild(h('p', { class: 'q-why ' + (r.okFrees ? 'ok' : 'wrong'), raw: (r.okFrees ? '✓ ' : '✗ ') + tr('Compaction freed too little room {n} times, so it ran again at once.', { n: r.thrash }) }));
+            results.appendChild(h('p', { class: 'q-why ' + (r.okFewer ? 'ok' : 'wrong'), raw: (r.okFewer ? '✓ ' : '✗ ') + tr('The chat was compacted {n} times.', { n: r.compactions }) }));
+            results.appendChild(h('p', { class: 'q-why ' + (r.okExact ? 'ok' : 'wrong'), raw: (r.okExact ? '✓ ' : '✗ ') + tr('{n} recent turns are kept exactly.', { n: r.exactTurns }) }));
+            if (r.ok) {
+                results.appendChild(h('p', { class: 'score good', text: 'The chat runs smoothly.' }));
+                results.appendChild(h('p', { text: 'Compact early enough to leave room, keep enough recent turns to stay coherent, and not so many that compaction frees nothing.' }));
+                results.appendChild(openDoorButton(cb));
+            } else {
+                results.appendChild(h('p', { class: 'score bad', text: 'Not yet.' }));
+                results.appendChild(h('p', { text: 'Adjust the dials and run the chat again.' }));
+            }
+        }
+
+        render();
+        wrap.appendChild(board);
+        wrap.appendChild(h('button', { class: 'go', type: 'button', text: 'Run the chat', on: { click: run } }));
+        wrap.appendChild(results);
+        host.appendChild(wrap);
+    }
+
+    function buildCompNote(host, cb) {
+        quizPanel(host, cb, 'The Memory Note',
+            tr('When a chat is compacted, a short note replaces the old turns. Decide what the note must <b>keep</b> and what can be <b>left out</b>. Get 7 of {total} right.', { total: P.NOTE_ITEMS.length }),
+            {
+                options: P.NOTE_OPTIONS,
+                items: P.NOTE_ITEMS, pass: 7,
+                passMsg: 'The note is short and nothing important is lost. Keep goals, rules, exact details, decisions and the next step.'
+            });
+    }
+
+    function buildMarkov(host, cb) {
+        quizPanel(host, cb, 'The Markov Table',
+            tr('A <b>Markov chain</b> picks what comes next using only the <b>current state</b>, with no memory of how it got there. Decide whether each system works that way, or needs the <b>whole history</b>. Get 5 of {total} right.', { total: P.MARKOV_ITEMS.length }),
+            {
+                options: P.MARKOV_OPTIONS,
+                items: P.MARKOV_ITEMS, pass: 5,
+                passMsg: 'The table is read. A chat model sees its whole window, which is why long context and compaction matter.'
+            });
+    }
+
+    function buildMemBound(host, cb) {
+        quizPanel(host, cb, 'The Bound Test',
+            tr('A job is limited by whichever resource runs out first: <b>memory bandwidth</b> (how fast data is read) or <b>compute</b> (how fast maths is done). Decide which limits each case. Get 5 of {total} right.', { total: P.BOUND_ITEMS.length }),
+            {
+                options: P.BOUND_OPTIONS,
+                items: P.BOUND_ITEMS, pass: 5,
+                passMsg: 'Writing one token at a time waits on memory. Reading a long prompt is mostly maths. Knowing which limit you hit tells you what will help.'
+            });
+    }
+
+    function buildDrafting(host, cb) {
+        var wrap = panelFrame('The Draft Desk',
+            tr('<b>Speculative decoding</b> lets a cheap guesser write a few <b>draft tokens</b>, then the big model checks them all in one pass and keeps the ones it agrees with. The answer is exactly the same, only faster. The guesser can be a <b>separate small model</b> or <b>MTP</b> (multi-token prediction) heads built into the model. Longer drafts help when guesses are right and cost time when they are wrong. For each workload pick a method and a draft length that is within 3% of the best speed-up.'), cb);
+        var picks = {};
+        var board = h('div', { class: 'bw-board' });
+        var results = h('div', { class: 'puz-result', 'aria-live': 'polite' });
+
+        function row(load, label, key, values, fmt) {
+            var cur = picks[load.id] || {};
+            var btns = h('div', { class: 'q-btns' }, [h('span', { class: 'small', text: label })]);
+            values.forEach(function (v) {
+                var on = cur[key] === v.v;
+                var b = h('button', { class: 'ghost tool' + (on ? ' on' : ''), type: 'button', 'aria-pressed': on ? 'true' : 'false', raw: fmt(v) });
+                b.addEventListener('click', function () {
+                    picks[load.id] = picks[load.id] || { method: 'small', k: 0 };
+                    picks[load.id][key] = v.v;
+                    clear(results); render();
+                });
+                btns.appendChild(b);
+            });
+            return btns;
+        }
+
+        function render() {
+            clear(board);
+            P.DRAFT_LOADS.forEach(function (load) {
+                var box = h('div', { class: 'q' }, [h('p', { class: 'q-text', raw: load.text })]);
+                box.appendChild(row(load, 'Method:', 'method', P.DRAFT_METHODS.map(function (m) { return { v: m.id, label: m.label }; }), function (v) { return tr(v.label); }));
+                box.appendChild(row(load, 'Draft tokens:', 'k', P.DRAFT_K.map(function (k) { return { v: k }; }), function (v) { return String(v.v); }));
+                board.appendChild(box);
+            });
+        }
+
+        function run() {
+            clear(results);
+            var rows = P.draftResult(picks);
+            var good = 0;
+            rows.forEach(function (r, i) {
+                if (r.ok) { good++; }
+                var msg;
+                if (r.kind === 'ok') { msg = tr('✓ {n}. {speed}× faster. That is within 3% of the best.', { n: i + 1, speed: r.speed.toFixed(2) }); }
+                else if (r.kind === 'slower') { msg = tr('✗ {n}. {speed}× speed. The wrong guesses cost more than the right ones save.', { n: i + 1, speed: r.speed.toFixed(2) }); }
+                else { msg = tr('✗ {n}. {speed}× faster, but the best choice reaches {best}×.', { n: i + 1, speed: r.speed.toFixed(2), best: r.best.toFixed(2) }); }
+                results.appendChild(h('p', { class: 'q-why ' + (r.ok ? 'ok' : 'wrong'), raw: msg }));
+            });
+            results.appendChild(h('p', { class: 'score ' + (good === rows.length ? 'good' : 'bad'), raw: tr('{good} / {total} workloads tuned', { good: good, total: rows.length }) }));
+            if (good === rows.length) {
+                results.appendChild(h('p', { text: 'Predictable text rewards long drafts. Hard-to-predict text rewards short ones, or none. The output never changes.' }));
+                results.appendChild(openDoorButton(cb));
+            } else {
+                results.appendChild(h('p', { text: 'Try other settings and run the test again.' }));
+            }
+        }
+
+        render();
+        wrap.appendChild(board);
+        wrap.appendChild(h('button', { class: 'go', type: 'button', text: 'Run the test', on: { click: run } }));
+        wrap.appendChild(results);
+        host.appendChild(wrap);
+    }
+
+
+    /* ---------------------------------------------------------------- */
     /* Seeing and Hearing                                                */
     /* ---------------------------------------------------------------- */
     function buildInputs(host, cb) {
@@ -1967,6 +2117,11 @@
             else if (kind === 'hardware') { buildHardware(host, cb); }
             else if (kind === 'engine') { buildEngine(host, cb); }
             else if (kind === 'bandwidth') { buildBandwidth(host, cb); }
+            else if (kind === 'compaction') { buildCompaction(host, cb); }
+            else if (kind === 'compnote') { buildCompNote(host, cb); }
+            else if (kind === 'markov') { buildMarkov(host, cb); }
+            else if (kind === 'membound') { buildMemBound(host, cb); }
+            else if (kind === 'drafting') { buildDrafting(host, cb); }
             else if (kind === 'inputs') { buildInputs(host, cb); }
             else if (kind === 'pixels') { buildPixels(host, cb); }
             else if (kind === 'visionfit') { buildVisionFit(host, cb); }

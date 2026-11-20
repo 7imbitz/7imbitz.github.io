@@ -323,7 +323,15 @@
     var METAL_ROOMS = [
         chamber(0, 'hardware', 'The Hardware Hall', 'Match each machine to how it runs a model.', 'hardware'),
         chamber(1, 'engine', 'The Engine Room', 'Match each need to the engine feature that solves it.', 'engine'),
-        chamber(2, 'bandwidth', 'The Bandwidth Bottleneck', 'Pick the best model each machine can run fast enough.', 'bandwidth')
+        chamber(2, 'bandwidth', 'The Bandwidth Bottleneck', 'Pick the best model each machine can run fast enough.', 'bandwidth'),
+        chamber(0, 'membound', 'The Bound Test', 'Tell which jobs wait on memory bandwidth and which wait on compute.', 'membound'),
+        chamber(1, 'draftdesk', 'The Draft Desk', 'Tune draft tokens and MTP for each workload.', 'drafting')
+    ];
+
+    var LONGCHAT_ROOMS = [
+        chamber(0, 'compactdial', 'The Compaction Dial', 'Set when to compact and how much to keep, so the chat never runs out of room.', 'compaction'),
+        chamber(1, 'memonote', 'The Memory Note', 'Decide what a compaction note must keep.', 'compnote'),
+        chamber(2, 'markovtable', 'The Markov Table', 'Tell a Markov chain from a system that needs the whole history.', 'markov')
     ];
 
     var SENSES_ROOMS = [
@@ -476,6 +484,20 @@
             rooms: TEAMS_ROOMS
         },
         {
+            id: 'longchat',
+            title: 'Long Conversations',
+            group: 'bonus',
+            difficulty: 'hard',
+            unit: 'Chamber',
+            hud: 'basic',
+            theme: 'dusk',
+            ready: true,
+            requires: ['ai', 'models', 'talk', 'trust', 'local', 'hood', 'agentic'], // bonus: opens once every Basics dungeon is cleared
+            blurb: 'What happens when a chat outgrows its window: compaction, retained tokens, and what a Markov chain is.',
+            thumb: 'compactdial',
+            rooms: LONGCHAT_ROOMS
+        },
+        {
             id: 'safe',
             title: 'Jailbreaks and Safeguards',
             group: 'bonus',
@@ -499,7 +521,7 @@
             theme: 'steel',
             ready: true,
             requires: ['ai', 'models', 'talk', 'trust', 'local', 'hood', 'agentic'], // bonus: opens once every Basics dungeon is cleared
-            blurb: 'GPUs, CUDA and Metal, what an inference engine adds, and why memory bandwidth sets your speed.',
+            blurb: 'GPUs, CUDA and Metal, what an inference engine adds, why memory bandwidth sets your speed, and how draft tokens and MTP speed it up.',
             thumb: 'engine',
             rooms: METAL_ROOMS
         },

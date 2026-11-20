@@ -1174,7 +1174,148 @@
         });
     }
 
+
+    /* ================================================================ */
+    /* Dungeon: Long Conversations                                       */
+    /* ================================================================ */
+
+    // ---- Chamber 1: the Compaction Dial ----
+    // A long chat keeps growing. When it passes the compact line, older turns become a short note
+    // and only the most recent turns are kept word for word. Illustrative numbers.
+    var COMPACT = { window: 8000, reserve: 1000, base: 300, note: 500, turn: 400, turns: 40, maxCompactions: 5, minExactTurns: 3 };
+    var COMPACT_PCT = [50, 70, 85, 95, 100];
+    var COMPACT_KEEP = [800, 1600, 3000, 5000];
+    // cfg: { pct, keep }
+    function compactSim(cfg) {
+        var C = COMPACT;
+        var limit = cfg.pct / 100 * C.window;
+        var used = C.base;
+        var hist = 0;
+        var compactions = 0;
+        var overflows = 0;
+        var thrash = 0;
+        for (var t = 0; t < C.turns; t++) {
+            if (used >= limit) {
+                var kept = Math.min(cfg.keep, hist);
+                used = C.base + C.note + kept;
+                hist = kept;
+                compactions++;
+                if (used >= limit) { thrash++; }
+            }
+            if (used + C.turn + C.reserve > C.window) { overflows++; }
+            used += C.turn;
+            hist += C.turn;
+        }
+        var exactTurns = Math.floor(cfg.keep / C.turn);
+        return {
+            compactions: compactions, overflows: overflows, thrash: thrash, exactTurns: exactTurns,
+            okRoom: overflows === 0, okFewer: compactions <= C.maxCompactions, okExact: exactTurns >= C.minExactTurns, okFrees: thrash === 0,
+            ok: overflows === 0 && thrash === 0 && compactions <= C.maxCompactions && exactTurns >= C.minExactTurns
+        };
+    }
+
+    // ---- Chamber 2: the Memory Note (what a compaction note keeps) ----
+    var NOTE_OPTIONS = [
+        { id: 'keep', label: 'Keep in the note' },
+        { id: 'drop', label: 'Leave out' }
+    ];
+    var NOTE_ITEMS = [
+        { text: 'The goal: move the billing service to PostgreSQL by Friday.', answer: 'keep', why: 'The goal and deadline are what the whole job is for. Lose them and the agent drifts.' },
+        { text: 'A rule from the user: never touch the production database.', answer: 'keep', why: 'A constraint must survive compaction. If it is forgotten, the agent may break it.' },
+        { text: 'The file and line that were edited: billing/db.py, line 82.', answer: 'keep', why: 'Exact names and numbers cannot be rebuilt from a vague summary, so they go in word for word.' },
+        { text: 'A cheerful "Sure, happy to help!" at the start of a reply.', answer: 'drop', why: 'Pleasantries carry no information. Compaction is the time to throw them away.' },
+        { text: 'A 3,000-line log from a failed command that has already been understood.', answer: 'drop', why: 'Keep the finding, not the dump. The raw log would use up the room that compaction is trying to free.' },
+        { text: 'The decision to use connection pooling, and the reason for it.', answer: 'keep', why: 'Decisions and their reasons stop the agent from reopening a question that is already settled.' },
+        { text: 'Three earlier attempts at the same command, all with the same error.', answer: 'drop', why: 'One line is enough: "tried this, failed because of that". The repeats add nothing.' },
+        { text: 'The next step: run the migration tests.', answer: 'keep', why: 'Without the next step the agent has to work out where it was, and may start over.' }
+    ];
+
+    // ---- Chamber 3: the Markov Table ----
+    var MARKOV_OPTIONS = [
+        { id: 'markov', label: 'Only the current state' },
+        { id: 'history', label: 'The whole history' }
+    ];
+    var MARKOV_ITEMS = [
+        { text: 'A text toy that picks each next word using only the word before it.', answer: 'markov', why: 'That is a classic Markov chain: the next word depends on the current word and nothing earlier.' },
+        { text: 'A weather model where tomorrow depends only on today.', answer: 'markov', why: 'The past is ignored. Only today\'s state matters.' },
+        { text: 'A board game where a piece moves by a dice roll from its current square.', answer: 'markov', why: 'Where it goes next depends on where it stands now, not on the route it took to get there.' },
+        { text: 'A chat model whose next token depends on everything in its context window.', answer: 'history', why: 'It reads the whole window. It is Markov-like only if you count the entire window as the "state", which is why context length matters.' },
+        { text: 'Pip choosing its next step from the tile it stands on and where the plate is.', answer: 'markov', why: 'Pip does not remember its earlier steps. Each choice uses only its current position, so it is a Markov chain.' },
+        { text: 'An agent whose next action depends on the full list of past tool results.', answer: 'history', why: 'The history is part of what it decides from. That is why agents need memory and compaction.' }
+    ];
+
+    /* ================================================================ */
+    /* Under the Metal, more chambers                                    */
+    /* ================================================================ */
+
+    // ---- Bandwidth-bound or compute-bound? ----
+    var BOUND_OPTIONS = [
+        { id: 'bandwidth', label: 'Memory bandwidth' },
+        { id: 'compute', label: 'Compute' }
+    ];
+    var BOUND_ITEMS = [
+        { text: 'Writing one token at a time for a single user.', answer: 'bandwidth', why: 'Each token needs the whole model read from memory, with little maths per byte. The chip waits on memory.' },
+        { text: 'Reading a 30,000-token prompt in one pass before the first token appears.', answer: 'compute', why: 'Thousands of tokens are processed together against the same weights, so there is plenty of maths per byte read.' },
+        { text: 'A new chip has twice the compute but the same memory bandwidth. Writing speed barely changes.', answer: 'bandwidth', why: 'If memory is the limit, a faster calculator does not help.' },
+        { text: 'Squeezing a model to 4-bit makes writing faster, mostly because fewer bytes are read.', answer: 'bandwidth', why: 'Smaller weights mean less to read for every token.' },
+        { text: 'Multiplying huge matrices in a big training batch.', answer: 'compute', why: 'Big batches reuse each weight many times, so the maths is the limit.' },
+        { text: 'Checking several draft tokens in one pass costs little extra, because the weights are read only once.', answer: 'bandwidth', why: 'Reading the weights is the expensive part. Doing more work per read is nearly free.' }
+    ];
+
+    // ---- Draft tokens and MTP (speculative decoding) ----
+    // Speed-up = expected tokens per round / cost of a round.
+    // Expected tokens = (1 - p^(k+1)) / (1 - p), where p is the chance each draft token is right.
+    var DRAFT_K = [0, 1, 2, 4, 8];
+    var DRAFT_METHODS = [
+        { id: 'small', label: 'Separate small drafter', accept: 1.0, cost: 0.2 },
+        { id: 'mtp', label: 'Built-in MTP heads', accept: 0.8, cost: 0.1 }
+    ];
+    var DRAFT_LOADS = [
+        { id: 'code', text: 'Boilerplate code: very predictable text.', p: 0.92 },
+        { id: 'chat', text: 'Everyday chat answers.', p: 0.65 },
+        { id: 'story', text: 'Creative writing at a high temperature: hard to predict.', p: 0.3 }
+    ];
+    function draftMethod(id) { return DRAFT_METHODS.filter(function (m) { return m.id === id; })[0]; }
+    function draftSpeed(load, methodId, k) {
+        if (k === 0) { return 1; }
+        var m = draftMethod(methodId);
+        var p = Math.min(0.99, load.p * m.accept);
+        var expected = (1 - Math.pow(p, k + 1)) / (1 - p);
+        return expected / (1 + k * m.cost);
+    }
+    function draftBest(load) {
+        var best = 0;
+        DRAFT_METHODS.forEach(function (m) { DRAFT_K.forEach(function (k) { best = Math.max(best, draftSpeed(load, m.id, k)); }); });
+        return best;
+    }
+    // picks: { loadId: { method, k } }
+    function draftResult(picks) {
+        return DRAFT_LOADS.map(function (load) {
+            var pk = picks[load.id] || { method: 'small', k: 0 };
+            var speed = draftSpeed(load, pk.method, pk.k);
+            var best = draftBest(load);
+            var kind = speed < 1 ? 'slower' : (speed >= best * 0.97 ? 'ok' : 'weak');
+            return { load: load, speed: speed, best: best, kind: kind, ok: kind === 'ok' };
+        });
+    }
+
     var api = {
+        COMPACT: COMPACT,
+        COMPACT_PCT: COMPACT_PCT,
+        COMPACT_KEEP: COMPACT_KEEP,
+        compactSim: compactSim,
+        NOTE_OPTIONS: NOTE_OPTIONS,
+        NOTE_ITEMS: NOTE_ITEMS,
+        MARKOV_OPTIONS: MARKOV_OPTIONS,
+        MARKOV_ITEMS: MARKOV_ITEMS,
+        BOUND_OPTIONS: BOUND_OPTIONS,
+        BOUND_ITEMS: BOUND_ITEMS,
+        DRAFT_K: DRAFT_K,
+        DRAFT_METHODS: DRAFT_METHODS,
+        DRAFT_LOADS: DRAFT_LOADS,
+        draftSpeed: draftSpeed,
+        draftBest: draftBest,
+        draftResult: draftResult,
         INPUT_OPTIONS: INPUT_OPTIONS,
         INPUT_ITEMS: INPUT_ITEMS,
         PIX_PATCH: PIX_PATCH,

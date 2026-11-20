@@ -139,6 +139,23 @@
                     '<b>Teams:</b> use several agents when the job is big, independent or risky: split the work, run parts in parallel, and have a separate reviewer check it. A tiny job needs one agent.',
                     '<b>Files:</b> identity and core rules are always loaded (soul), methods are loaded when needed (skills), and facts learned over time are kept between sessions (memory). Secrets are never stored.',
                     '<b>Memory:</b> every entry costs tokens every session, so keep what is useful, current and safe, and prune the rest.'],
+                ['<span class="tip">Next: Long Conversations. What happens when a chat gets longer than the window?</span>']
+            ],
+            clearButton: 'Back to the dungeons'
+        },
+        longchat: {
+            intro: [
+                ['A long chat or a long agent job eventually outgrows the context window. See how <b>compaction</b> keeps it going, and what a <b>Markov chain</b> is, since a chat model is not one.'],
+                ['Three chambers lie ahead: when to compact and how much to keep, what the summary note must hold, and the difference between a current state and a whole history.',
+                    '<span class="tip">Walk into a golem to challenge it.</span>']
+            ],
+            introButton: 'Enter the dungeon',
+            clearTitle: 'Long Conversations cleared!',
+            clear: [
+                ['<b>Loot: the Hourglass.</b>',
+                    '<b>Compaction:</b> when the window reaches the compact line, old turns become a short note and only the last few are kept word for word. Compact early, keep enough, and do not compact so often that it frees nothing.',
+                    '<b>The note:</b> keep goals, rules, exact names and numbers, decisions and the next step. Drop pleasantries, raw dumps and repeated failures.',
+                    '<b>Markov chains:</b> a Markov chain looks only at its current state. A chat model reads its whole window, so what is in the window is what counts.'],
                 ['<span class="tip">Next: Jailbreaks and Safeguards. How do attacks talk a model out of its rules, and how do you defend against them?</span>']
             ],
             clearButton: 'Back to the dungeons'
@@ -163,7 +180,7 @@
         metal: {
             intro: [
                 ['Every model ends up running on a physical chip. See what is happening <b>under the metal</b>: which chips run models, what an inference engine adds, and why memory sets your speed.'],
-                ['Three chambers lie ahead: the hardware, the engine that drives it, and the bottleneck that limits it.',
+                ['Five chambers lie ahead: the hardware, the engine that drives it, the bottleneck that limits it, which limit you are hitting, and how draft tokens get around it.',
                     '<span class="tip">Walk into a golem to challenge it.</span>']
             ],
             introButton: 'Enter the dungeon',
@@ -172,7 +189,8 @@
                 ['<b>Loot: the Anvil.</b>',
                     '<b>Hardware:</b> NVIDIA GPUs use CUDA, Apple chips use Metal with shared memory, Vulkan is an open option, and a CPU works but slowly.',
                     '<b>Engines:</b> an inference engine adds a compatible API, prompt caching, speculative decoding, batching and context compaction on top of running the model.',
-                    '<b>Bandwidth:</b> speed is roughly memory bandwidth divided by model size, so a smaller or more quantized model is faster, and the model has to fit in memory first.'],
+                    '<b>Bandwidth:</b> speed is roughly memory bandwidth divided by model size, so a smaller or more quantized model is faster, and the model has to fit in memory first.',
+                    '<b>Drafting:</b> a cheap guesser, a small model or built-in MTP heads, proposes draft tokens and the big model checks them in one pass. Same answer, faster, if the guesses are mostly right.'],
                 ['<span class="tip">Next: Seeing and Hearing. How can a model look at a picture, and what does it cost?</span>']
             ],
             clearButton: 'Back to the dungeons'
@@ -207,7 +225,7 @@
                     '<b>The loop:</b> the harness feeds the model, the model proposes an action, the harness checks and runs it, and the result goes back into the history. The model only proposes.',
                     '<b>Limits:</b> step caps, loop detection and spending controls each catch different failures, so layer them and size them for real work.',
                     '<b>Autonomy:</b> let agents act alone only on low-risk, reversible actions. Ask a human for the hard to undo, and never hand over the catastrophic.'],
-                ['<span class="tip">The Basics are complete. The bonus dungeons are now open: <b>Tools and MCP</b>, <b>Agent Teams and Memory</b>, <b>Jailbreaks and Safeguards</b>, <b>Under the Metal</b> and <b>The Forge</b>.</span>']
+                ['<span class="tip">The Basics are complete. The bonus dungeons are now open: <b>Tools and MCP</b>, <b>Agent Teams and Memory</b>, <b>Long Conversations</b>, <b>Jailbreaks and Safeguards</b>, <b>Under the Metal</b> and <b>The Forge</b>.</span>']
             ],
             clearButton: 'Back to the dungeons'
         },
@@ -328,6 +346,26 @@
         bandwidth: [
             ['Generating a token means reading the model out of memory. A machine can have a fast chip and still wait on memory.',
                 'Pick a model for each machine, so that it fits, runs fast enough, and is as good as it can be.', '<span class="tip">Walk into a golem to challenge it.</span>']
+        ],
+        compactdial: [
+            ['Every message adds tokens, and the window is only so big. When it fills, the chat either stops or forgets. <b>Compaction</b> is the third way: squeeze the old turns into a short note and carry on.',
+                'Set the line at which to compact, and how many recent tokens to keep word for word.', '<span class="tip">Walk into a golem to challenge it.</span>']
+        ],
+        memonote: [
+            ['A compaction note replaces many turns with a few lines. Whatever it leaves out is gone for good.',
+                'Decide what the note must keep and what can safely be dropped.', '<span class="tip">Walk into a golem to challenge it.</span>']
+        ],
+        markovtable: [
+            ['A <b>Markov chain</b> is a system with no memory of the past: the next step depends only on where it is now. People often say a chat model is one.',
+                'Decide which systems really are Markov chains, and which need the whole history.', '<span class="tip">Walk into a golem to challenge it.</span>']
+        ],
+        membound: [
+            ['A chip can be held up by two different things: waiting for data to arrive, or waiting for the maths to finish.',
+                'Decide which one limits each case.', '<span class="tip">Walk into a golem to challenge it.</span>']
+        ],
+        draftdesk: [
+            ['Writing one token at a time wastes the chip, because it waits on memory. <b>Speculative decoding</b> uses that idle time: a cheap guesser drafts several tokens and the big model checks them together.',
+                'Tune the method and the draft length for each workload.', '<span class="tip">Walk into a golem to challenge it.</span>']
         ],
         breakin: [
             ['A jailbreak is an attempt to talk a model out of its rules. Many of them follow a few patterns.',
@@ -507,6 +545,31 @@
             '<b>In the real world:</b> many models are text-only, and a model that was not built with an encoder cannot see, however large it is. Names and cards give hints: a tag such as VL or vision, a modalities line, an extra projector file. A speech-to-text step in front of a text model is a workaround, not a multimodal model.',
             '<b>Use it:</b> check the model card for the input line and the encoders before you download, and test with your own pictures, since quality differs a lot between models.'
         ],
+        compaction: [
+            '<b>Name it:</b> <i>compaction</i>: when a conversation nears the end of its context window, the older turns are summarised into a short note, and only the most recent turns are kept exactly. The compact line is usually a percentage of the window, and the <i>retained tokens</i> are the recent text kept word for word.',
+            '<b>In the real world:</b> coding agents and long chats do this automatically. Compact too late and the window overflows. Compact too early, or keep too little, and the model forgets what you just said. Keep too much and the compaction frees almost nothing, so it runs again at once.',
+            '<b>Use it:</b> leave room for the next reply, keep enough recent turns to stay coherent, and check what survived. Write down anything critical in a file, because a summary can lose detail.'
+        ],
+        compnote: [
+            '<b>Name it:</b> <i>the compaction note</i>: the summary that stands in for the old turns. Anything not in it is no longer visible to the model.',
+            '<b>In the real world:</b> good notes keep the goal, the rules you gave, exact file names and numbers, decisions with their reasons, and the next step. They drop pleasantries, long raw output and repeated failed attempts.',
+            '<b>Use it:</b> before a long job, state the goal and the rules clearly, and ask for them to be preserved. After a compaction, check that the important details are still there.'
+        ],
+        markovchain: [
+            '<b>Name it:</b> <i>Markov chain</i>: a system where the next state depends only on the current state, not on how it got there. A text toy that picks the next word from the previous word is one.',
+            '<b>In the real world:</b> a chat model is not a simple Markov chain, because it reads its whole context window before every token. You can call it Markov only if you count the entire window as the state, which is huge. That is why what is in the window matters, and why compaction changes the answers.',
+            '<b>Use it:</b> when a model seems to forget or contradict itself, ask what is actually in its window right now. The model has no memory outside it.'
+        ],
+        membound: [
+            '<b>Name it:</b> <i>bandwidth-bound and compute-bound</i>: a job is bandwidth-bound when it waits on data being read from memory, and compute-bound when it waits on the maths.',
+            '<b>In the real world:</b> writing one token at a time is bandwidth-bound, because the whole model is read for a little maths. Reading a long prompt is compute-bound, because many tokens share each read of the weights. That is why a longer prompt is processed far faster per token than it is answered.',
+            '<b>Use it:</b> find which limit you hit before you spend money. A faster chip will not help a bandwidth-bound job, but a smaller or quantized model will.'
+        ],
+        drafting: [
+            '<b>Name it:</b> <i>speculative decoding</i>: a cheap guesser writes a few <i>draft tokens</i>, then the big model checks them all in one pass and keeps the ones it would have written itself. <i>MTP</i> (multi-token prediction) uses extra heads built into the model as the guesser, instead of a separate small model.',
+            '<b>In the real world:</b> because checking several tokens reads the weights only once, it costs little extra. The output is identical to normal decoding. The gain depends on how often the guesses are right: predictable text such as code gains a lot, and hard-to-predict text gains little.',
+            '<b>Use it:</b> try longer drafts for predictable work and short ones, or none, for creative work at a high temperature, and measure the real speed.'
+        ],
         mediatokens: [
             '<b>Name it:</b> <i>media tokens</i>: an image is cut into small patches and each patch becomes tokens, sound is turned into tokens a few dozen per second, and video is a series of images plus sound.',
             '<b>In the real world:</b> media is expensive. One image can cost as much as pages of text, a long clip can fill the whole context window, and a picture shrunk too far loses the small text in it. The exact counts differ between models.',
@@ -643,6 +706,11 @@
         speed:      { dungeon: 'hood',   title: 'Tokens per second',         where: 'The Speed Run',        line: 'Match speed to the job: wait for the first token, streaming rate, or total throughput.' },
         cache:      { dungeon: 'hood',   title: 'Caching',                   where: 'The Cache Vault',      line: 'Put stable content first in a prompt so the cache can reuse it.' },
         guardrails: { dungeon: 'hood',   title: 'Alignment and guardrails',  where: 'The Guardrail Gate',   line: 'Uncensored removes a model\'s refusals, not the risk. Add protection somewhere else.' },
+        compaction: { dungeon: 'longchat', title: 'Compaction and retained tokens', where: 'The Compaction Dial', line: 'Compact early enough to leave room, and keep enough recent turns to stay coherent.' },
+        compnote:   { dungeon: 'longchat', title: 'The compaction note',   where: 'The Memory Note',      line: 'Keep goals, rules, exact details, decisions and the next step. Drop filler.' },
+        markovchain: { dungeon: 'longchat', title: 'Markov chains',       where: 'The Markov Table',     line: 'A Markov chain uses only its current state. A chat model reads its whole window.' },
+        membound:   { dungeon: 'metal',   title: 'Bandwidth-bound or compute-bound', where: 'The Bound Test', line: 'Writing tokens waits on memory. Reading a long prompt waits on maths.' },
+        drafting:   { dungeon: 'metal',   title: 'Draft tokens and MTP',   where: 'The Draft Desk',       line: 'A cheap guesser drafts, the big model checks. Same answer, faster, when guesses are right.' },
         multimodal: { dungeon: 'senses',  title: 'Multimodal models',      where: 'The Model Card Hall',  line: 'Check the card: a model needs an encoder for each kind of input it can take.' },
         mediatokens: { dungeon: 'senses', title: 'Pictures and sound as tokens', where: 'The Pixel Mill', line: 'Media becomes tokens too, and a lot of them. Send only the size and frames you need.' },
         visionvram: { dungeon: 'senses',  title: 'Vision and memory',      where: 'The VRAM Vault',       line: 'Seeing costs memory twice: for the vision part, and for every image in the context.' },
@@ -759,6 +827,29 @@
         multimodal: [
             { t: 'Visual Instruction Tuning (LLaVA)', s: 'arXiv paper', u: 'https://arxiv.org/abs/2304.08485' },
             { t: 'Learning Transferable Visual Models From Natural Language Supervision (CLIP)', s: 'arXiv paper', u: 'https://arxiv.org/abs/2103.00020' }
+        ],
+        compaction: [
+            { t: 'Effective context engineering for AI agents', s: 'Anthropic', u: 'https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents' },
+            { t: 'MemGPT: Towards LLMs as Operating Systems', s: 'arXiv paper', u: 'https://arxiv.org/abs/2310.08560' },
+            { t: 'TensorFold run guide (compact-at, compact-keep)', s: 'GitHub', u: 'https://github.com/ashhart/TensorFold/blob/main/docs/run-guide.md' }
+        ],
+        compnote: [
+            { t: 'Effective context engineering for AI agents', s: 'Anthropic', u: 'https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents' },
+            { t: 'How Claude remembers your project', s: 'Claude Code docs', u: 'https://code.claude.com/docs/en/memory' }
+        ],
+        markovchain: [
+            { t: 'Markov chain', s: 'Wikipedia', u: 'https://en.wikipedia.org/wiki/Markov_chain' },
+            { t: 'Examples of Markov chains', s: 'Wikipedia', u: 'https://en.wikipedia.org/wiki/Examples_of_Markov_chains' }
+        ],
+        membound: [
+            { t: 'Transformer Inference Arithmetic', s: 'kipply\'s blog', u: 'https://kipp.ly/p/transformer-inference-arithmetic' },
+            { t: 'Roofline model', s: 'Wikipedia', u: 'https://en.wikipedia.org/wiki/Roofline_model' }
+        ],
+        drafting: [
+            { t: 'Fast Inference from Transformers via Speculative Decoding', s: 'arXiv paper', u: 'https://arxiv.org/abs/2211.17192' },
+            { t: 'Accelerating LLM Decoding with Speculative Sampling', s: 'arXiv paper', u: 'https://arxiv.org/abs/2302.01318' },
+            { t: 'Better and Faster LLMs via Multi-token Prediction', s: 'arXiv paper', u: 'https://arxiv.org/abs/2404.19737' },
+            { t: 'DeepSeek-V3 Technical Report (MTP)', s: 'arXiv paper', u: 'https://arxiv.org/abs/2412.19437' }
         ],
         mediatokens: [
             { t: 'An Image is Worth 16x16 Words (Vision Transformer)', s: 'arXiv paper', u: 'https://arxiv.org/abs/2010.11929' },

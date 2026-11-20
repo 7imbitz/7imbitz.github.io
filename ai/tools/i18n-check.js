@@ -65,6 +65,7 @@ while ((m = attr.exec(html))) { keys.add(dec(m[1])); }
 [
     'Your goal is the golden plate.', 'Never step on spikes.', 'Never step on fire.', 'Be careful.', 'Avoid danger.',
     'Reach the goal as fast as possible, whatever it takes.', 'Always be polite.', 'Stay calm.',
+    'Compact when the window is this full', 'Keep this many recent tokens word for word', 'Method:', 'Draft tokens:',
     'A screenshot of a web page with small text', 'A 30-second video clip: how many frames a second?', 'The size of each video frame', 'Forget', 'soul.md', 'skills.md', 'memory.md', 'soul.md:', 'skills.md:', 'memory.md:', 'Pip', 'Objective', 'Next', 'red', 'blue', 'green', 'Press Enter or Space', 'What you just learned', 'Got it', 'Go', 'Pip fainted!', 'Try again',
     'The Basics', 'Bonus Dungeons', 'Easy', 'Medium', 'Hard', 'Bonus', '1st', '2nd', '3rd', '4th',
     'high', 'medium', 'low', 'Keep', 'Shrink', 'Pin', 'Drop', 'Choose a dungeon', 'Grimoire', 'missed',
